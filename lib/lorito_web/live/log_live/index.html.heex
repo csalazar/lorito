@@ -1,0 +1,51 @@
+<.header>
+  Listing Logs
+</.header>
+
+<.table
+  id="logs"
+  rows={@streams.logs}
+  row_click={fn {_id, log} -> JS.navigate(~p"/_lorito/logs/#{log}") end}
+>
+  <:col :let={{_id, log}} label="Date">
+    {Timex.format!(
+      log.inserted_at,
+      "%b %d, %Y at %H:%M:%S",
+      :strftime
+    )}
+  </:col>
+  <:col :let={{_id, log}} label="Project">
+    <%= if log.project do %>
+      {log.project.name}
+    <% else %>
+      catch-all
+    <% end %>
+  </:col>
+  <:col :let={{_id, log}} label="Workspace">
+    <%= if log.workspace do %>
+      {Lorito.Workspaces.Workspace.get_displayable_name(log.workspace)}
+    <% else %>
+      -
+    <% end %>
+  </:col>
+
+  <:col :let={{_id, log}} label="Method">{log.method}</:col>
+  <:col :let={{id, log}} label="Ip">
+    {log.ip}
+    <.link
+      phx-click={JS.push("ip_delete", value: %{ip: log.ip}) |> hide("##{id}")}
+      class="btn btn-primary btn-xs"
+    >
+      delete
+    </.link>
+  </:col>
+  <:col :let={{_id, log}} label="Url">{log.url}</:col>
+  <:action :let={{id, log}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: log.id}) |> hide("##{id}")}
+      class="btn btn-ghost"
+    >
+      <.icon name="hero-trash" />
+    </.link>
+  </:action>
+</.table>

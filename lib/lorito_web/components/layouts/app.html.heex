@@ -1,0 +1,44 @@
+<%= if @current_user do %>
+  <header class="px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
+      <div class="flex items-center gap-4">
+        <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
+          <a href="/_lorito">&ltº\\ lorito</a>
+        </p>
+        <a href="/_lorito/projects">
+          <button class="btn btn-accent">projects</button>
+        </a>
+        <a href="/_lorito/templates">
+          <button class="btn btn-accent">templates</button>
+        </a>
+        <a href="/_lorito/logs">
+          <button class="btn btn-accent">logs</button>
+        </a>
+
+        <a href="/_lorito/integrations">
+          <button class="btn btn-accent">integrations</button>
+        </a>
+      </div>
+      <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end ">
+        <li class="text-[0.8125rem] leading-6 text-zinc-900 dark:text-base-content">
+          {@current_user.email}
+        </li>
+        <li>
+          <.link
+            href={~p"/_lorito/users/log_out"}
+            method="delete"
+            class="btn btn-neutral btn-outline btn-xs"
+          >
+            Log out
+          </.link>
+        </li>
+      </ul>
+    </div>
+  </header>
+<% end %>
+<main class="px-4 py-20 sm:px-6 lg:px-8">
+  <div class="mx-auto w-11/12">
+    <.flash_group flash={@flash} />
+    {@inner_content}
+  </div>
+</main>

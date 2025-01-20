@@ -1,0 +1,19 @@
+{
+	"name": "Elixir, Phoenix, Node.js & PostgresSQL (Community)",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "elixir",
+	"workspaceFolder": "/workspace",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"jakebecker.elixir-ls"
+			]
+		}
+	},
+	"forwardPorts": [
+		4000,
+		4001,
+		5432
+	],
+	"remoteUser": "vscode"
+}

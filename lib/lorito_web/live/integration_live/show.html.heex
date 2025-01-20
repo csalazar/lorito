@@ -1,0 +1,32 @@
+<.header>
+  Integration {@integration.id}
+  <:subtitle>This is a integration record from your database.</:subtitle>
+  <:actions>
+    <.link patch={~p"/_lorito/integrations/#{@integration}/show/edit"} phx-click={JS.push_focus()}>
+      <.button class="btn btn-primary">Edit integration</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.list>
+  <:item title="Type">{@integration.type}</:item>
+  <:item title="Webhook url">{@integration.webhook_url}</:item>
+</.list>
+
+<.back navigate={~p"/_lorito/integrations"}>Back to integrations</.back>
+
+<.modal
+  :if={@live_action == :edit}
+  id="integration-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/integrations/#{@integration}")}
+>
+  <.live_component
+    module={LoritoWeb.IntegrationLive.FormComponent}
+    id={@integration.id}
+    title={@page_title}
+    action={@live_action}
+    integration={@integration}
+    patch={~p"/_lorito/integrations/#{@integration}"}
+  />
+</.modal>

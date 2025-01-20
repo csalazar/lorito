@@ -1,0 +1,86 @@
+<.header>
+  Log {@log.id}
+  <:subtitle>This is a log record from your database.</:subtitle>
+  <:actions></:actions>
+</.header>
+
+<.list>
+  <!-- TODO: remove the condition when all instances have new logs !-->
+  <:item :if={@log.project} title="Project">
+    <.link navigate={~p"/_lorito/projects/#{@log.project}/workspaces"}>
+      {@log.project.name}
+      <.icon name="hero-link" />
+    </.link>
+  </:item>
+  <:item title="Workspace">
+    <%= if @log.workspace do %>
+      <.link navigate={~p"/_lorito/projects/#{@log.project}/workspaces/#{@log.workspace}"}>
+        {Lorito.Workspaces.Workspace.get_displayable_name(@log.workspace)}
+        <.icon name="hero-link" />
+      </.link>
+    <% else %>
+      catch-all
+    <% end %>
+  </:item>
+  <:item title="Method">{@log.method}</:item>
+  <:item title="Ip">{@log.ip}</:item>
+  <:item title="Url">{@log.url}</:item>
+  <:item title="Headers">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for [header, value] <- @log.headers do %>
+          <tr>
+            <td><b>{header}</b></td>
+            <td class="whitespace-normal break-all">
+              {value}
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </:item>
+  <:item :if={@log.params} title="Params">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for {name, value} <- @log.params do %>
+          <tr>
+            <td><b>{name}</b></td>
+            <td class="whitespace-normal break-all">
+              <%= case name do %>
+                <% "screenshot" -> %>
+                  <%= if String.starts_with?(value, "data:image/") do %>
+                    <img src={value} />
+                  <% else %>
+                    Invalid image format: {value}
+                  <% end %>
+                <% _ -> %>
+                  {value}
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </:item>
+  <:item title="Body">{@log.body}</:item>
+</.list>
+<%= case @live_action do %>
+  <% :log_show-> %>
+    <.back navigate={~p"/_lorito/logs"}>Back to logs</.back>
+  <% :workspace_log_show -> %>
+    <.back navigate={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}"}>
+      Back to workspace
+    </.back>
+<% end %>

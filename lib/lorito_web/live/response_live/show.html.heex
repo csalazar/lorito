@@ -1,0 +1,66 @@
+<.header>
+  Response {@response.id}
+  <:actions>
+    <.link
+      patch={
+        ~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses/#{@response}/show/edit"
+      }
+      phx-click={JS.push_focus()}
+    >
+      <.button class="btn-primary">Edit response</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.list>
+  <:item title="Route">{@response.route}</:item>
+  <:item title="Status">{@response.status}</:item>
+  <:item :if={Enum.count(@response.headers) > 0} title="Headers">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= for %Lorito.Responses.Response.Header{} = header <- @response.headers do %>
+          <tr>
+            <td><b>{header.name}</b></td>
+            <td class="whitespace-normal break-all">
+              {header.value}
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </:item>
+  <:item title="Body">
+    <div class="whitespace-normal break-all">
+      {@response.body}
+    </div>
+  </:item>
+</.list>
+
+<.back navigate={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}"}>
+  Back to workspace
+</.back>
+
+<.modal
+  :if={@live_action == :edit}
+  id="response-modal"
+  show
+  on_cancel={
+    JS.patch(~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses/#{@response}")
+  }
+>
+  <.live_component
+    module={LoritoWeb.ResponseLive.FormComponent}
+    id={@response.id}
+    title={@page_title}
+    action={@live_action}
+    response={@response}
+    workspace={@workspace}
+    patch={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses/#{@response}"}
+  />
+</.modal>

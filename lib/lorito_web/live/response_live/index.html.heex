@@ -1,0 +1,50 @@
+<.header>
+  Listing Responses
+  <:actions>
+    <.link patch={~p"/_lorito/responses/new"}>
+      <.button class="btn-primary">New Response</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="responses"
+  rows={@streams.responses}
+  row_click={fn {_id, response} -> JS.navigate(~p"/_lorito/responses/#{response}") end}
+>
+  <:col :let={{_id, response}} label="Route">{response.route}</:col>
+  <:col :let={{_id, response}} label="Status">{response.status}</:col>
+  <:col :let={{_id, response}} label="Headers">{response.headers}</:col>
+  <:col :let={{_id, response}} label="Body">{response.body}</:col>
+  <:action :let={{_id, response}}>
+    <div class="sr-only">
+      <.link navigate={~p"/_lorito/responses/#{response}"}>Show</.link>
+    </div>
+    <.link patch={~p"/_lorito/responses/#{response}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={{id, response}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: response.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+    >
+      Delete
+    </.link>
+  </:action>
+</.table>
+
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="response-modal"
+  show
+  on_cancel={JS.push(~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses")}
+>
+  <.live_component
+    module={LoritoWeb.ResponseLive.FormComponent}
+    id={@response.id || :new}
+    title={@page_title}
+    action={@live_action}
+    response={@response}
+    workspace={@workspace}
+    patch={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses"}
+  />
+</.modal>

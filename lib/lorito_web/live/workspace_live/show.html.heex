@@ -1,0 +1,212 @@
+<.header>
+  <div class="flex space-x-4">
+    <div>
+      Workspace {Lorito.Workspaces.Workspace.get_displayable_name(@workspace)}
+
+      <div :if={@workspace.template} class="badge badge-secondary">
+        {@workspace.template.name}
+      </div>
+    </div>
+    <div :if={@workspace.notifiable}>
+      <.icon name="hero-bell-alert" />
+    </div>
+  </div>
+
+  <:subtitle>
+    <div class="badge badge-md badge-neutral p-4">
+      <div class="flex space-x-4">
+        <div>
+          {@project.name}
+        </div>
+        <div :if={@project.notifiable}>
+          <.icon name="hero-bell-alert" />
+        </div>
+      </div>
+    </div>
+  </:subtitle>
+
+  <:actions>
+    <div class="flex space-x-1">
+      <%= if @workspace.template && Enum.count(@workspace.template.copy_payloads) > 0 do %>
+        <div class="dropdown dropdown-hover">
+          <div tabindex="0" role="button" class="btn">
+            <.icon name="hero-clipboard-document-list" />
+          </div>
+          <ul
+            tabindex="0"
+            class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+          >
+            <%= for %Lorito.Templates.Template.CopyPayload{} = cp <- @workspace.template.copy_payloads do %>
+              <li>
+                <a phx-click={
+                  JS.dispatch("phx:copy",
+                    detail: %{url: get_copy_payload_url(cp.value, @workspace)}
+                  )
+                }>
+                  {cp.name}
+                </a>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% else %>
+        <.link
+          phx-click={
+            JS.dispatch("phx:copy",
+              detail: %{url: LoritoWeb.Utils.build_workspace_url(@workspace)}
+            )
+          }
+          class="btn"
+        >
+          <.icon name="hero-link" />
+        </.link>
+      <% end %>
+      <.link
+        patch={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses/new"}
+        class="btn btn-primary"
+      >
+        Add response
+      </.link>
+      <.link
+        patch={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/show/edit"}
+        class="btn btn-secondary"
+      >
+        Edit workspace
+      </.link>
+    </div>
+  </:actions>
+</.header>
+
+<div class="divider divider-accent divider-start pt-16">Responses</div>
+<.table
+  id="responses"
+  rows={@streams.responses}
+  row_click={
+    fn {_id, response} ->
+      JS.navigate(
+        ~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses/#{response}"
+      )
+    end
+  }
+>
+  <:col :let={{_id, response}} label="Route">
+    <.display_route workspace={@workspace} response={response} />
+  </:col>
+  <:col :let={{_id, response}} label="Status">
+    {response.status}
+    <%= if response.delay != 0 do %>
+      <div class="tooltip" data-tip={"#{response.delay} seconds"}>
+        🐌
+      </div>
+    <% end %>
+  </:col>
+  <:col :let={{_id, response}} label="Headers">
+    <ul :for={header <- response.headers}>
+      <li>{header.name}: {header.value}</li>
+    </ul>
+  </:col>
+  <:action :let={{id, response}}>
+    <.button
+      class="btn btn-sm btn-ghost"
+      phx-click={
+        JS.dispatch("phx:copy",
+          detail: %{url: LoritoWeb.Utils.build_response_url(@workspace, response)}
+        )
+      }
+    >
+      <.icon name="hero-link" />
+    </.button>
+
+    <.link
+      patch={
+        ~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/responses/#{response}/edit_from_workspace"
+      }
+      phx-click={JS.push_focus()}
+      class="btn btn-ghost btn-sm"
+    >
+      <.icon name="hero-pencil-square" />
+    </.link>
+    <.link
+      phx-click={JS.push("delete_response", value: %{id: response.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+      class="btn btn-ghost btn-sm"
+    >
+      <.icon name="hero-trash" />
+    </.link>
+  </:action>
+</.table>
+
+<div class="divider divider-accent divider-start pt-20">Logs</div>
+
+<.table
+  id="logs"
+  rows={@streams.logs}
+  row_click={
+    fn {_id, log} ->
+      JS.navigate(~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/logs/#{log}")
+    end
+  }
+>
+  <:col :let={{_id, log}} label="Date">
+    {Timex.format!(
+      log.inserted_at,
+      "%b %d, %Y at %H:%M:%S",
+      :strftime
+    )}
+  </:col>
+  <:col :let={{_id, log}} label="IP">{log.ip}</:col>
+  <:col :let={{_id, log}} label="Method">{log.method}</:col>
+  <:col :let={{_id, log}} label="Url">{determine_relative_url(@workspace, log.url)}</:col>
+  <:col :let={{_id, log}} label="Body Length">{String.length(log.body)}</:col>
+  <:action :let={{_id, log}}>
+    <div class="sr-only">
+      <.link navigate={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/logs/#{log}"}>
+        Show
+      </.link>
+    </div>
+  </:action>
+  <:action :let={{id, log}}>
+    <.link
+      phx-click={JS.push("delete_log", value: %{id: log.id}) |> hide("##{id}")}
+      class="btn btn-ghost "
+    >
+      <.icon name="hero-trash" />
+    </.link>
+  </:action>
+</.table>
+
+<.back navigate={~p"/_lorito/projects/#{@project}/workspaces"}>Back to workspaces</.back>
+
+<.modal
+  :if={@live_action == :edit}
+  id="workspace-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}")}
+>
+  <.live_component
+    module={LoritoWeb.WorkspaceLive.FormComponent}
+    id={@workspace.id}
+    title={@page_title}
+    action={@live_action}
+    workspace={@workspace}
+    project={@project}
+    patch={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}"}
+  />
+</.modal>
+
+<.modal
+  :if={@live_action in [:edit_response, :new_response]}
+  id="response-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}")}
+>
+  <.live_component
+    module={LoritoWeb.ResponseLive.FormComponent}
+    id={@response.id || :new}
+    title={@page_title}
+    action={@live_action}
+    response={@response}
+    workspace={@workspace}
+    patch={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}"}
+  />
+</.modal>

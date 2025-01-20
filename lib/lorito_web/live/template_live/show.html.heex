@@ -1,0 +1,109 @@
+<.header>
+  Template {@template.name}
+  <:actions>
+    <.link patch={~p"/_lorito/templates/#{@template}/responses/new"}>
+      <.button class="btn-primary">Add response</.button>
+    </.link>
+    <.link patch={~p"/_lorito/templates/#{@template}/show/edit"} phx-click={JS.push_focus()}>
+      <.button class="btn-secondary">Edit template</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<div class="divider"></div>
+
+<.header>Copy Payloads</.header>
+<table class="table w-full">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%= for %Lorito.Templates.Template.CopyPayload{} = cp <- @template.copy_payloads do %>
+      <tr>
+        <td><b>{cp.name}</b></td>
+        <td class="whitespace-normal break-all">
+          {cp.value}
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<div class="divider"></div>
+
+<.header>Responses</.header>
+<.table id="responses" rows={@streams.responses}>
+  <:col :let={{_id, response}} label="Route">
+    {response.route}
+  </:col>
+  <:col :let={{_id, response}} label="Status">
+    {response.status}
+    <%= if response.delay != 0 do %>
+      <div class="tooltip" data-tip={"#{response.delay} seconds"}>
+        🐌
+      </div>
+    <% end %>
+  </:col>
+  <:col :let={{_id, response}} label="Headers">
+    <ul :for={header <- response.headers}>
+      <li>{header.name}: {header.value}</li>
+    </ul>
+  </:col>
+  <:action :let={{_id, response}}>
+    <.link
+      patch={~p"/_lorito/templates/#{@template}/responses/#{response}/edit"}
+      phx-click={JS.push_focus()}
+      class="btn btn-ghost btn-sm"
+    >
+      <.icon name="hero-pencil-square" />
+    </.link>
+  </:action>
+
+  <:action :let={{id, response}}>
+    <.link
+      phx-click={JS.push("delete_response", value: %{id: response.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+      class="btn btn-ghost btn-sm"
+    >
+      <.icon name="hero-trash" />
+    </.link>
+  </:action>
+</.table>
+
+<.back navigate={~p"/_lorito/templates"}>Back to templates</.back>
+
+<.modal
+  :if={@live_action == :edit}
+  id="template-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/templates/#{@template}")}
+>
+  <.live_component
+    module={LoritoWeb.TemplateLive.FormComponent}
+    id={@template.id}
+    title={@page_title}
+    action={@live_action}
+    template={@template}
+    patch={~p"/_lorito/templates/#{@template}"}
+  />
+</.modal>
+
+<.modal
+  :if={@live_action in [:edit_response, :new_response]}
+  id="response-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/templates/#{@template}")}
+>
+  <.live_component
+    module={LoritoWeb.ResponseLive.FormComponent}
+    id={@response.id || :new}
+    title={@page_title}
+    action={@live_action}
+    response={@response}
+    template={@template}
+    patch={~p"/_lorito/templates/#{@template}"}
+  />
+</.modal>

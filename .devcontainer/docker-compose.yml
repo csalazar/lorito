@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  elixir:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VARIANT: "1.17.3"
+        PHOENIX_VERSION: "1.7.18"
+        NODE_VERSION: "22"
+
+    volumes:
+      - ..:/workspace:cached
+    network_mode: service:db
+    command: sleep infinity
+
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+
+volumes:
+  postgres-data:

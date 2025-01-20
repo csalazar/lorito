@@ -1,0 +1,53 @@
+<.header>
+  Listing Projects
+  <:actions>
+    <.link patch={~p"/_lorito/projects/new"}>
+      <.button class="btn-primary">New Project</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="projects"
+  rows={@streams.projects}
+  row_click={fn {_id, project} -> JS.navigate(~p"/_lorito/projects/#{project}/workspaces") end}
+>
+  <:col :let={{_id, project}} label="Name">
+    <div class="flex space-x-4">
+      <div>
+        {project.name}
+      </div>
+      <div :if={project.notifiable}>
+        <.icon name="hero-bell-alert" />
+      </div>
+    </div>
+  </:col>
+  <:action :let={{id, project}}>
+    <.link patch={~p"/_lorito/projects/#{project}/edit"} class="btn btn-ghost btn-sm">
+      <.icon name="hero-pencil-square" />
+    </.link>
+    <.link
+      phx-click={JS.push("delete", value: %{id: project.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+      class="btn btn-ghost btn-sm"
+    >
+      <.icon name="hero-trash" />
+    </.link>
+  </:action>
+</.table>
+
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="project-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/projects")}
+>
+  <.live_component
+    module={LoritoWeb.ProjectLive.FormComponent}
+    id={@project.id || :new}
+    title={@page_title}
+    action={@live_action}
+    project={@project}
+    patch={~p"/_lorito/projects"}
+  />
+</.modal>

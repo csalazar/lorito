@@ -1,0 +1,53 @@
+<.header>
+  Listing Integrations
+  <:actions>
+    <.link patch={~p"/_lorito/integrations/new"}>
+      <.button class="btn-primary">New Integration</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="integrations"
+  rows={@streams.integrations}
+  row_click={fn {_id, integration} -> JS.navigate(~p"/_lorito/integrations/#{integration}") end}
+>
+  <:col :let={{_id, integration}} label="Type">{integration.type}</:col>
+  <:col :let={{_id, integration}} label="Webhook url">{integration.webhook_url}</:col>
+  <:action :let={{id, integration}}>
+    <div class="flex">
+      <.link
+        phx-click={JS.push("send_probe", value: %{id: integration.id})}
+        class="btn btn-ghost btn-sm"
+      >
+        Send probe
+      </.link>
+      <.link patch={~p"/_lorito/integrations/#{integration}/edit"} class="btn btn-ghost btn-sm">
+        <.icon name="hero-pencil-square" />
+      </.link>
+      <.link
+        phx-click={JS.push("delete", value: %{id: integration.id}) |> hide("##{id}")}
+        data-confirm="Are you sure?"
+        class="btn btn-ghost btn-sm"
+      >
+        <.icon name="hero-trash" />
+      </.link>
+    </div>
+  </:action>
+</.table>
+
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="integration-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/integrations")}
+>
+  <.live_component
+    module={LoritoWeb.IntegrationLive.FormComponent}
+    id={@integration.id || :new}
+    title={@page_title}
+    action={@live_action}
+    integration={@integration}
+    patch={~p"/_lorito/integrations"}
+  />
+</.modal>

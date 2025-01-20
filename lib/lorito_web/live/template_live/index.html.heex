@@ -1,0 +1,41 @@
+<.header>
+  Listing Templates
+  <:actions>
+    <.link patch={~p"/_lorito/templates/new"}>
+      <.button class="btn-primary">New Template</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="templates"
+  rows={@streams.templates}
+  row_click={fn {_id, template} -> JS.navigate(~p"/_lorito/templates/#{template}") end}
+>
+  <:col :let={{_id, template}} label="Name">{template.name}</:col>
+  <:action :let={{id, template}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: template.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+      class="btn btn-ghost btn-sm"
+    >
+      <.icon name="hero-trash" />
+    </.link>
+  </:action>
+</.table>
+
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="template-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/templates")}
+>
+  <.live_component
+    module={LoritoWeb.TemplateLive.FormComponent}
+    id={@template.id || :new}
+    title={@page_title}
+    action={@live_action}
+    template={@template}
+    patch={~p"/_lorito/templates"}
+  />
+</.modal>
