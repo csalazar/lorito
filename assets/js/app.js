@@ -7,10 +7,16 @@ import topbar from "../vendor/topbar";
 
 let Hooks = {};
 Hooks.CodeEditorHook = CodeEditorHook;
+Hooks.HideFlash = {
+  mounted() {
+    setTimeout(() => {
+      this.pushEvent("lv:clear-flash", { key: this.el.dataset.key });
+      this.el.style.display = "none";
+    }, 4_000);
+  },
+};
 
-let csrfToken = document
-  .querySelector("meta[name='csrf-token']")
-  .getAttribute("content");
+let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
 let liveSocket = new LiveSocket("/live", Socket, {
   hooks: Hooks,
   params: { _csrf_token: csrfToken },
@@ -43,19 +49,18 @@ window.addEventListener("phx:copy", (event) => {
 });
 
 function applyColorSchemePreference() {
-  const darkExpected = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const darkExpected = window.matchMedia("(prefers-color-scheme: dark)").matches;
   if (darkExpected) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.setProperty('color-scheme', 'dark');
-  }
-  else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.style.setProperty('color-scheme', 'light');
+    document.documentElement.classList.add("dark");
+    document.documentElement.style.setProperty("color-scheme", "dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.setProperty("color-scheme", "light");
   }
 }
 
 // set listener to update color scheme preference on change
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
   const newColorScheme = event.matches ? "dark" : "light";
   console.log(newColorScheme);
   applyColorSchemePreference();
