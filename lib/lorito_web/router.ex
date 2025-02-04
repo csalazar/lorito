@@ -81,6 +81,8 @@ defmodule LoritoWeb.Router do
            TemplateLive.Show,
            :edit_response
 
+      live "/users/settings", UserSettingsLive, :edit
+
       scope("/projects/:project_id") do
         live "/edit", ProjectLive.Index, :edit
 

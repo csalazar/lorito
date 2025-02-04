@@ -20,18 +20,24 @@
         </a>
       </div>
       <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end ">
-        <li class="text-[0.8125rem] leading-6 text-zinc-900 dark:text-base-content">
-          {@current_user.email}
-        </li>
-        <li>
-          <.link
-            href={~p"/_lorito/users/log_out"}
-            method="delete"
-            class="btn btn-neutral btn-outline btn-xs"
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" class="avatar placeholder">
+            <div class="bg-primary text-neutral-content w-12 rounded-full">
+              <span class="text-lg">{@current_user.email |> String.at(0)}</span>
+            </div>
+          </div>
+          <ul
+            tabindex="0"
+            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
           >
-            Log out
-          </.link>
-        </li>
+            <li><.link href={~p"/_lorito/users/settings"}>Settings</.link></li>
+            <li>
+              <.link href={~p"/_lorito/users/log_out"} method="delete">
+                Logout
+              </.link>
+            </li>
+          </ul>
+        </div>
       </ul>
     </div>
   </header>

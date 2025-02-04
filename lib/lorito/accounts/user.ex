@@ -9,6 +9,7 @@ defmodule Lorito.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :naive_datetime
+    field :timezone, :string, default: "UTC"
 
     timestamps()
   end
@@ -158,6 +159,12 @@ defmodule Lorito.Accounts.User do
     else
       add_error(changeset, :current_password, "is not valid")
     end
+  end
+
+  def settings_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:timezone])
+    |> validate_inclusion(:timezone, Tzdata.canonical_zone_list())
   end
 
   def get_user_from_process() do

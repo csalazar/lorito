@@ -17,6 +17,17 @@ defmodule LoritoWeb.Utils do
       route -> "#{build_workspace_url(workspace)}/#{route}"
     end
   end
+
+  def format_datetime(date, current_user) do
+    timezone = current_user.timezone
+
+    Timex.format!(
+      Timex.Timezone.convert(date, "UTC")
+      |> Timex.Timezone.convert(timezone),
+      "%b %d, %Y at %H:%M:%S",
+      :strftime
+    )
+  end
 end
 
 defmodule LoritoWeb.Utils.SolidCustomFilters do

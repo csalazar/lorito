@@ -8,11 +8,7 @@
   row_click={fn {_id, log} -> JS.navigate(~p"/_lorito/logs/#{log}") end}
 >
   <:col :let={{_id, log}} label="Date">
-    {Timex.format!(
-      log.inserted_at,
-      "%b %d, %Y at %H:%M:%S",
-      :strftime
-    )}
+    {LoritoWeb.Utils.format_datetime(log.inserted_at, @current_user)}
   </:col>
   <:col :let={{_id, log}} label="Project">
     <%= if log.project do %>

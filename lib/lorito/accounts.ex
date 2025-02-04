@@ -62,6 +62,16 @@ defmodule Lorito.Accounts do
     |> Repo.insert()
   end
 
+  def update_user(%User{} = user, attrs \\ %{}) do
+    user
+    |> User.settings_changeset(attrs)
+    |> Repo.update()
+  end
+
+  def change_user_settings(%User{} = user, attrs \\ %{}) do
+    User.settings_changeset(user, attrs)
+  end
+
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking user changes.
 
