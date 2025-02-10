@@ -44,3 +44,4 @@ deployments
 fly.toml
 
 /config/.env.exs
+.env

@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  elixir:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: ".env"
+    ports:
+      - "4000:4000"

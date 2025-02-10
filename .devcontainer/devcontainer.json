@@ -15,5 +15,6 @@
 		4001,
 		5432
 	],
-	"remoteUser": "vscode"
+	"remoteUser": "vscode",
+	"postCreateCommand": "bash .devcontainer/create_dotenv.sh"
 }
