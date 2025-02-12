@@ -43,8 +43,10 @@ lorito needs two secrets (environment variables) to work:
 
 ### Using docker-compose
 
-You can use [docker-compose](https://docs.docker.com/compose/) to run lorito.
-To configure secrets, create a `.env` file to set:
+You can use [docker-compose](https://docs.docker.com/compose/) to run lorito
+using the provided `docker-compose.yml` file.
+To configure secrets,
+create a [.env file](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#env-file) to declare:
 
 * `DATABASE_URL`: `postgresql://` connection URI
 * `SECRET_KEY_BASE`: you can generate one with `head -c 66 /dev/urandom | base64 -w 0`
@@ -54,9 +56,10 @@ To configure secrets, create a `.env` file to set:
 and its dashboard at `http://localhost:4000/_lorito`.
 
 To add a user, follow this steps:
-1. Enter into the container with `docker-compose exec app /bin/bash`
-2. Then, enter IEX with `./bin/lorito remote`
-3. Add your user with `Lorito.Release.add_user("email@domain.tld")`
+1. Enter into the container with `docker-compose exec elixir /bin/bash`
+2. Run the database migrations with `./bin/migrate`
+3. Then, enter IEX with `./bin/lorito remote`
+4. Add your user with `Lorito.Release.add_user("email@domain.tld")`
 
 ### Using docker-compose with a postgres container
 
@@ -65,7 +68,10 @@ Beware that it uses default distro SSL keys to set up SSL
 and [containers aren't recommended for production databases](https://vsupalov.com/database-in-docker/).
 
 You can execute `docker-compose -f docker-compose.with-db.yml up`
-and then update `.env` with `DATABASE_URL=postgresql://postgres:postgres@db:5432/app`.
+and update `.env` with `DATABASE_URL=postgresql://postgres:postgres@db:5432/app`.
+
+Then, follow the same instructions to add a user
+as outlined in the previous section.
 
 # Deployment
 
@@ -75,3 +81,11 @@ My suggestion is to go with [fly.io](https://fly.io).
 It takes care of secrets, SSL certificates, custom domains, monitoring, etc.
 
 There's a little guide [here](docs/fly_io_deployment.md).
+
+# Troubleshooting
+
+## We can't find the internet error & loading bar not finishing
+
+The issue is that you're accessing lorito dashboard
+from an IP/host different than `PHX_HOST` from `.env` file.
+They must match and the issue should be resolved.
