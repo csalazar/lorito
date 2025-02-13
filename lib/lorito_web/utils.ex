@@ -32,4 +32,5 @@ end
 
 defmodule LoritoWeb.Utils.SolidCustomFilters do
   def http_protocol(url), do: String.replace(url, ~r/^https:/, "http:")
+  def no_protocol(url), do: String.replace(url, ~r/^https?:/, "")
 end
