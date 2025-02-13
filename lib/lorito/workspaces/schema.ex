@@ -31,6 +31,7 @@ defmodule Lorito.Workspaces.Workspace do
   def changeset(workspace, attrs) do
     workspace
     |> cast(attrs, [:name, :path, :notifiable])
+    |> validate_format(:path, ~r|^[a-zA-Z0-9\._-]*$|)
     |> cast_embed(:rebindings, with: &rebinding_changeset/2)
   end
 
@@ -42,6 +43,7 @@ defmodule Lorito.Workspaces.Workspace do
   def changeset_update(workspace, attrs) do
     workspace
     |> cast(attrs, [:name, :path, :notifiable])
+    |> validate_format(:path, ~r|^[a-zA-Z0-9\._-]*$|)
     |> cast_embed(:rebindings, with: &rebinding_changeset/2)
   end
 

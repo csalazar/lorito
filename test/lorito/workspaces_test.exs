@@ -74,6 +74,13 @@ defmodule Lorito.WorkspacesTest do
       assert workspace.name == "new name"
     end
 
+    test "update_workspace/2 with invalid path fails" do
+      workspace = workspace_fixture()
+      update_attrs = %{path: "aaa/bbb"}
+
+      assert {:error, %Ecto.Changeset{}} = Workspaces.update_workspace(workspace, update_attrs)
+    end
+
     test "delete_workspace/1 deletes the workspace" do
       workspace = workspace_fixture()
       assert {:ok, %Workspace{}} = Workspaces.delete_workspace(workspace)
