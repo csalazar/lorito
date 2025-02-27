@@ -53,7 +53,8 @@ defmodule Lorito.MixProject do
       {:solid, "~> 0.14"},
       {:live_monaco_editor, "~> 0.1"},
       {:tesla, "~> 1.11"},
-      {:safeurl, "~> 0.3"}
+      {:safeurl, "~> 0.3"},
+      {:remote_ip, "~> 1.0"}
     ]
   end
 
