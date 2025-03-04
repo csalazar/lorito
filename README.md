@@ -1,5 +1,7 @@
 # <º\\\ lorito - HTTP security suite
 
+![GitHub Release](https://img.shields.io/github/v/release/csalazar/lorito)
+
 # What's this about?
 
 Please read the [introduction blog post](https://csal.medium.com/introducing-lorito-a-security-http-suite-153c6df05516).
