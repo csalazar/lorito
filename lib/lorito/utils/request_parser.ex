@@ -10,12 +10,7 @@ defmodule Lorito.Utils.RequestParser do
   end
 
   def get_ip(conn) do
-    ip =
-      case Plug.Conn.get_req_header(conn, "fly-client-ip") do
-        [] -> conn.remote_ip
-        [ip] -> ip
-      end
-
+    ip = conn.remote_ip
     parse_ip(ip)
   end
 

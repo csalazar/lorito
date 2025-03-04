@@ -43,5 +43,7 @@ defmodule LoritoWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+
+  plug LoritoWeb.Plugs.FetchRemoteIp
   plug LoritoWeb.Router
 end
