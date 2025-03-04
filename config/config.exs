@@ -58,6 +58,20 @@ config :phoenix, :json_library, Jason
 config :hammer,
   backend: {Hammer.Backend.ETS, [expiry_ms: 60_000 * 60 * 4, cleanup_interval_ms: 60_000 * 10]}
 
+config :versioce,
+  changelog: [
+    datagrabber: Versioce.Changelog.DataGrabber.Git,
+    formatter: Versioce.Changelog.Formatter.Keepachangelog
+  ],
+  files: [
+    "README.md",
+    "mix.exs"
+  ],
+  git: [
+    dirty_add: true
+  ],
+  post_hooks: [Versioce.PostHooks.Git.Release]
+
 if config_env() in [:dev, :test] do
   import_config ".env.exs"
 end
