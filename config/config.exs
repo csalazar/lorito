@@ -68,7 +68,9 @@ config :versioce,
     "mix.exs"
   ],
   git: [
-    dirty_add: true
+    dirty_add: true,
+    tag_template: "v{version}",
+    tag_message_template: "Release v{version}"
   ],
   post_hooks: [Versioce.PostHooks.Git.Release]
 
