@@ -7,9 +7,11 @@ defmodule Lorito.Logs.LogsRepo do
   def list_logs(_filters \\ %{}) do
     Repo.all(from l in Log, limit: 100, order_by: [desc: l.inserted_at])
     |> Repo.preload([:project, :workspace])
+    |> Enum.map(&Log.populate_host_field/1)
   end
 
-  def get_log!(id), do: Repo.get!(Log, id) |> Repo.preload([:project, :workspace])
+  def get_log!(id),
+    do: Repo.get!(Log, id) |> Repo.preload([:project, :workspace]) |> Log.populate_host_field()
 
   def create_log(attrs \\ %{}) do
     %Log{}

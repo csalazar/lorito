@@ -26,7 +26,9 @@
   </:col>
 
   <:col :let={{_id, log}} label="Method">{log.method}</:col>
-  <:col :let={{id, log}} label="Ip">
+  <:col :let={{_id, log}} label="Host">{log.host}</:col>
+
+  <:col :let={{id, log}} label="IP">
     {log.ip}
     <.link
       phx-click={JS.push("ip_delete", value: %{ip: log.ip}) |> hide("##{id}")}
