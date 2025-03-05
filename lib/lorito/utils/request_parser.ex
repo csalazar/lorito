@@ -1,17 +1,6 @@
 defmodule Lorito.Utils.RequestParser do
-  @doc false
-  defp parse_ip(ip) when is_tuple(ip) do
-    ip |> Tuple.to_list() |> Enum.join(".")
-  end
-
-  @doc false
-  defp parse_ip(ip) when is_bitstring(ip) do
-    ip
-  end
-
   def get_ip(conn) do
-    ip = conn.remote_ip
-    parse_ip(ip)
+    conn.remote_ip |> :inet.ntoa() |> to_string()
   end
 
   def get_url(conn) do
