@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
       args:
         VARIANT: "1.17.3"
-        PHOENIX_VERSION: "1.7.18"
+        PHOENIX_VERSION: "1.7.21"
         NODE_VERSION: "22"
 
     volumes:

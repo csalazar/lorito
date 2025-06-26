@@ -8,16 +8,13 @@ defmodule Lorito.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Start the Telemetry supervisor
-      LoritoWeb.Telemetry,
       # Start the Ecto repository
       Lorito.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: Lorito.PubSub},
       # Start the Endpoint (http/https)
-      LoritoWeb.Endpoint
-      # Start a worker by calling: Lorito.Worker.start_link(arg)
-      # {Lorito.Worker, arg}
+      LoritoWeb.Endpoint,
+      LoritoWeb.RateLimit
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

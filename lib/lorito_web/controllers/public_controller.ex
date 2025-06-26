@@ -151,7 +151,11 @@ defmodule LoritoWeb.PublicController do
 
   def rate_limit({:not_found, :catch_all}, _conn) do
     # 5 requests in 1 minute
-    case Hammer.check_rate("catch_all", 60_000 * 1, 5) do
+    key = "catch_all"
+    scale = :timer.minutes(1)
+    limit = 5
+
+    case LoritoWeb.RateLimit.hit(key, scale, limit) do
       {:allow, _count} ->
         {:ok, :catch_all}
 
@@ -163,7 +167,11 @@ defmodule LoritoWeb.PublicController do
   def rate_limit({:ok, workspace, route}, _conn) do
     # 20 requests in 1 minutes
     # rate limit at project level to avoid workspace enumeration
-    case Hammer.check_rate("project_#{workspace.project_id}", 60_000 * 1, 20) do
+    key = "project_#{workspace.project_id}"
+    scale = :timer.minutes(1)
+    limit = 20
+
+    case LoritoWeb.RateLimit.hit(key, scale, limit) do
       {:allow, _count} ->
         {:ok, :workspace, %{workspace: workspace, route: route}}
 
