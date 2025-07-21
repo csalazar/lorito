@@ -10,7 +10,6 @@ defmodule LoritoWeb.Utils do
       LoritoWeb.Endpoint.url()
       |> URI.parse()
       |> Map.get(:host)
-      |> IO.inspect(label: "Server Host")
 
     if request_host == server_host do
       nil
