@@ -148,7 +148,7 @@ defmodule LoritoWeb.PublicController do
       nil ->
         with [project_id, workspace_id | route] <- path |> String.split("/"),
              workspace_id <- String.slice(workspace_id, 0, 6),
-             workspace <-
+             %Workspace{} = workspace <-
                Workspaces.get_workspace(%{project: project_id, id: workspace_id}) do
           {:ok, workspace, route}
         else
@@ -174,6 +174,7 @@ defmodule LoritoWeb.PublicController do
   end
 
   def rate_limit({:ok, workspace, route}, _conn) do
+    IO.inspect(workspace, label: "Workspace for rate limit")
     # 20 requests in 1 minutes
     # rate limit at project level to avoid workspace enumeration
     key = "project_#{workspace.project_id}"
