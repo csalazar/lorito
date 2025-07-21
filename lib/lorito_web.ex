@@ -53,6 +53,8 @@ defmodule LoritoWeb do
       use Phoenix.LiveView,
         layout: {LoritoWeb.Layouts, :app}
 
+      on_mount Sentry.LiveViewHook
+
       unquote(html_helpers())
     end
   end

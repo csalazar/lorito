@@ -55,4 +55,16 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
+
+  with {:ok, dsn} <- System.fetch_env("SENTRY_DSN") do
+    IO.puts("Enabling Sentry reporting ..")
+
+    config :sentry,
+      dsn: dsn,
+      environment_name: :prod,
+      enable_source_code_context: true,
+      root_source_code_paths: [File.cwd!()]
+  else
+    :error -> IO.puts("Sentry DSN not set, skipping Sentry configuration")
+  end
 end

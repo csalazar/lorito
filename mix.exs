@@ -54,7 +54,8 @@ defmodule Lorito.MixProject do
       {:safeurl, "~> 1.0"},
       {:remote_ip, "~> 1.0"},
       {:versioce, "~> 2.0.0", only: :dev},
-      {:git_cli, "~> 0.3.0", only: :dev}
+      {:git_cli, "~> 0.3.0", only: :dev},
+      {:sentry, "~> 11.0.2"}
     ]
   end
 
