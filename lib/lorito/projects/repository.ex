@@ -11,6 +11,14 @@ defmodule Lorito.Projects.ProjectRepo do
 
   def get_project!(id), do: Repo.get!(Project, id) |> Repo.preload(:user)
 
+  def get_project(%{subdomain: nil}), do: nil
+
+  def get_project(%{subdomain: subdomain}) do
+    Project
+    |> where([p], p.subdomain == ^subdomain)
+    |> Repo.one()
+  end
+
   def create_project(attrs \\ %{}) do
     caller = User.get_user_from_process()
 

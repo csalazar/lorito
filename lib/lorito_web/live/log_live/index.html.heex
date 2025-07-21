@@ -1,11 +1,30 @@
 <.header>
   Listing Logs
+  <:subtitle>
+    <div class="flex items-center space-x-2">
+      <.input
+        name="match_checkbox"
+        type="checkbox"
+        phx-click="toggle_match_filter"
+        value={@filters[:match]}
+      />
+      <label for="match_checkbox">Show only matches</label>
+    </div>
+  </:subtitle>
 </.header>
 
 <.table
   id="logs"
   rows={@streams.logs}
   row_click={fn {_id, log} -> JS.navigate(~p"/_lorito/logs/#{log}") end}
+  row_class={
+    fn {_id, log} ->
+      case log.workspace || log.project do
+        nil -> []
+        _ -> ["dark:bg-neutral", "bg-yellow-50"]
+      end
+    end
+  }
 >
   <:col :let={{_id, log}} label="Date">
     {LoritoWeb.Utils.format_datetime(log.inserted_at, @current_user)}

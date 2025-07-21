@@ -20,6 +20,7 @@ defmodule LoritoWeb.ProjectLive.FormComponent do
         phx-submit="save"
       >
         <.input field={@form[:name]} type="text" label="Name" />
+        <.input field={@form[:subdomain]} type="text" label="Subdomain (optional)" />
         <.input field={@form[:notifiable]} type="checkbox" label="Send notifications?" />
         <:actions>
           <.button class="btn-primary" phx-disable-with="Saving...">Save Project</.button>

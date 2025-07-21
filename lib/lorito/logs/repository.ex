@@ -4,8 +4,18 @@ defmodule Lorito.Logs.LogsRepo do
 
   alias Lorito.Logs.Log
 
-  def list_logs(_filters \\ %{}) do
-    Repo.all(from l in Log, limit: 100, order_by: [desc: l.inserted_at])
+  def filter_by_match(query, %{match: true}) do
+    where(query, [l], not is_nil(l.project_id))
+  end
+
+  def filter_by_match(query, _), do: query
+
+  def list_logs(filters \\ %{}) do
+    Log
+    |> filter_by_match(filters)
+    |> limit(^100)
+    |> order_by([l], desc: l.inserted_at)
+    |> Repo.all()
     |> Repo.preload([:project, :workspace])
     |> Enum.map(&Log.populate_host_field/1)
   end

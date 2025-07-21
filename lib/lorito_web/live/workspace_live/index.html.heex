@@ -1,16 +1,7 @@
 <.header>
   Listing Workspaces
   <:subtitle>
-    <div class="badge badge-md badge-neutral p-4">
-      <div class="flex space-x-4">
-        <div>
-          {@project.name}
-        </div>
-        <div :if={@project.notifiable}>
-          <.icon name="hero-bell-alert" />
-        </div>
-      </div>
-    </div>
+    <.live_component module={LoritoWeb.ContextSubtitleComponent} id="subtitle" project={@project} />
   </:subtitle>
   <:actions>
     <div class="dropdown dropdown-hover">

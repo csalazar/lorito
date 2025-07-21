@@ -61,14 +61,14 @@ defmodule Lorito.Workspaces.WorkspaceRepo do
     |> filter_by_project(filters)
     |> filter_by_id(filters)
     |> Repo.one()
-    |> Repo.preload([:responses, :template])
+    |> Repo.preload([:project, :responses, :template])
   end
 
   def get_workspace(%{path: _path} = filters) when is_map(filters) do
     Workspace
     |> filter_by_path(filters)
     |> Repo.one()
-    |> Repo.preload([:responses, :template])
+    |> Repo.preload([:project, :responses, :template])
   end
 
   def create_workspace(attrs) do

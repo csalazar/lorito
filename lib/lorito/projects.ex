@@ -3,6 +3,7 @@ defmodule Lorito.Projects do
 
   defdelegate list_projects(filters \\ %{}), to: ProjectRepo
   defdelegate get_project!(id), to: ProjectRepo
+  defdelegate get_project(filters), to: ProjectRepo
   defdelegate create_project(attrs \\ %{}), to: ProjectRepo
   defdelegate update_project(project, attrs \\ %{}), to: ProjectRepo
   defdelegate delete_project(project), to: ProjectRepo

@@ -7,6 +7,7 @@ defmodule Lorito.Projects.Project do
   schema "projects" do
     field :name, :string
     field :notifiable, :boolean, default: false
+    field :subdomain, :string
 
     belongs_to(:user, Lorito.Accounts.User, type: :binary_id)
     has_many :workspaces, Lorito.Workspaces.Workspace
@@ -17,7 +18,7 @@ defmodule Lorito.Projects.Project do
   @doc false
   def changeset(project, attrs) do
     project
-    |> cast(attrs, [:name, :notifiable])
+    |> cast(attrs, [:name, :notifiable, :subdomain])
     |> validate_required([:name])
   end
 

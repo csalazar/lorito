@@ -4,14 +4,23 @@ alias Lorito.Workspaces.Workspace
 alias Lorito.Responses
 alias Lorito.Responses.Response
 alias Lorito.Logs
+alias Lorito.Projects
+alias Lorito.Projects.Project
 alias Lorito.Utils.RequestParser
 
 defmodule RequestLogger do
-  def log(conn, workspace) do
+  def log(conn, %Workspace{} = workspace) do
     conn
     |> Logs.gather_log_attributes()
     |> Map.put(:workspace_id, workspace.id)
     |> Map.put(:project_id, workspace.project_id)
+    |> Logs.create_log()
+  end
+
+  def log(conn, %Project{} = project) do
+    conn
+    |> Logs.gather_log_attributes()
+    |> Map.put(:project_id, project.id)
     |> Logs.create_log()
   end
 
@@ -185,7 +194,14 @@ defmodule LoritoWeb.PublicController do
   end
 
   def forward_request({:ok, :catch_all}, conn) do
-    RequestLogger.log(conn)
+    with subdomain when not is_nil(subdomain) <- LoritoWeb.Utils.get_subdomain(conn),
+         project when not is_nil(project) <- Projects.get_project(%{subdomain: subdomain}) do
+      RequestLogger.log(conn, project)
+    else
+      _ ->
+        RequestLogger.log(conn)
+    end
+
     conn |> put_status(404) |> json(nil)
   end
 
