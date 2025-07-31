@@ -1,6 +1,6 @@
 # <º\\\ lorito - HTTP security suite
 
-![GitHub Release](https://img.shields.io/github/v/release/csalazar/lorito)
+![version](https://img.shields.io/github/v/tag/csalazar/lorito)
 
 # What's this about?
 
