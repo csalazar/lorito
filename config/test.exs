@@ -12,7 +12,7 @@ config :lorito, Lorito.Repo,
   database: "app_test",
   username: "postgres",
   password: "postgres",
-  hostname: "db",
+  hostname: System.get_env("POSTGRES_HOST", "db"),
   pool_size: 5,
   pool: Ecto.Adapters.SQL.Sandbox
 
