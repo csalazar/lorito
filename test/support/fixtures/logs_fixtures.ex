@@ -20,5 +20,6 @@ defmodule Lorito.LogsFixtures do
       |> Lorito.Logs.create_log()
 
     log
+    |> Lorito.Logs.Log.populate_host_field()
   end
 end
