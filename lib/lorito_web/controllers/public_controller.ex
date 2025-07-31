@@ -227,7 +227,8 @@ defmodule LoritoWeb.PublicController do
   Main entrypoint for handling requests.
   """
   def process_requests(conn, %{"route" => paths} = _params) do
-    path = Enum.join(paths, "/")
+    path =
+      URI.encode(Enum.join(paths, "/"))
 
     # _lorito application paths are handled by the Phoenix router
     # however, not registered paths will end up here
