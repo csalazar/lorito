@@ -174,7 +174,6 @@ defmodule LoritoWeb.PublicController do
   end
 
   def rate_limit({:ok, workspace, route}, _conn) do
-    IO.inspect(workspace, label: "Workspace for rate limit")
     # 20 requests in 1 minutes
     # rate limit at project level to avoid workspace enumeration
     key = "project_#{workspace.project_id}"

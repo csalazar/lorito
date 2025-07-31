@@ -55,10 +55,8 @@ defmodule LoritoWeb.LogLive.Index do
 
   @impl true
   def handle_event("toggle_match_filter", params, socket) do
-    IO.inspect(params, label: "Params in LogLive.Index")
     enabled = Map.get(params, "value", "off") == "true"
     filters = %{match: enabled}
-    IO.inspect(filters, label: "Filters in LogLive.Index")
 
     {:noreply,
      socket
