@@ -3,12 +3,12 @@
   <:subtitle>
     <div class="flex items-center space-x-2">
       <.input
-        name="match_checkbox"
+        name="scoped_logs_checkbox"
         type="checkbox"
-        phx-click="toggle_match_filter"
-        value={@filters[:match]}
+        phx-click="toggle_scoped_logs_filter"
+        value={@filters[:scoped_logs]}
       />
-      <label for="match_checkbox">Show only matches</label>
+      <label for="match_checkbox">Show only scoped logs</label>
     </div>
   </:subtitle>
 </.header>
@@ -33,7 +33,7 @@
     <%= if log.project do %>
       {log.project.name}
     <% else %>
-      catch-all
+      -
     <% end %>
   </:col>
   <:col :let={{_id, log}} label="Workspace">

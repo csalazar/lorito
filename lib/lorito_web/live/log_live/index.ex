@@ -6,7 +6,7 @@ defmodule LoritoWeb.LogLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket), do: Logs.PubSub.subscribe()
-    filters = %{match: false}
+    filters = %{scoped_logs: false}
 
     {:ok,
      socket
@@ -21,8 +21,8 @@ defmodule LoritoWeb.LogLive.Index do
     filters = socket.assigns.filters
     log = Logs.get_log!(log.id)
 
-    if filters[:match] do
-      # If match filter is enabled, we only want to show logs with a project or workspace
+    if filters[:scoped_logs] do
+      # If `scoped_logs` filter is enabled, we only want to show logs from a project or workspace
       if log.project_id || log.workspace_id do
         {:noreply, stream_insert(socket, :logs, log, at: 0)}
       else
@@ -54,9 +54,9 @@ defmodule LoritoWeb.LogLive.Index do
   end
 
   @impl true
-  def handle_event("toggle_match_filter", params, socket) do
+  def handle_event("toggle_scoped_logs_filter", params, socket) do
     enabled = Map.get(params, "value", "off") == "true"
-    filters = %{match: enabled}
+    filters = %{scoped_logs: enabled}
 
     {:noreply,
      socket

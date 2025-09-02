@@ -4,15 +4,15 @@ defmodule Lorito.Logs.LogsRepo do
 
   alias Lorito.Logs.Log
 
-  def filter_by_match(query, %{match: true}) do
+  def filter_scoped_logs(query, %{scoped_logs: true}) do
     where(query, [l], not is_nil(l.project_id))
   end
 
-  def filter_by_match(query, _), do: query
+  def filter_scoped_logs(query, _), do: query
 
   def list_logs(filters \\ %{}) do
     Log
-    |> filter_by_match(filters)
+    |> filter_scoped_logs(filters)
     |> limit(^100)
     |> order_by([l], desc: l.inserted_at)
     |> Repo.all()
