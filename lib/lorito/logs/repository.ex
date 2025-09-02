@@ -43,6 +43,10 @@ defmodule Lorito.Logs.LogsRepo do
     Repo.delete_all(from l in Log, where: l.ip == ^ip, select: l)
   end
 
+  def delete_logs(%{type: :catch_all}) do
+    Repo.delete_all(from l in Log, where: is_nil(l.project_id), select: l)
+  end
+
   def change_log(%Log{} = log, attrs \\ %{}) do
     Log.changeset(log, attrs)
   end

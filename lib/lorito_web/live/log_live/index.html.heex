@@ -11,6 +11,12 @@
       <label for="match_checkbox">Show only scoped logs</label>
     </div>
   </:subtitle>
+
+  <:actions>
+    <.link phx-click={JS.push("delete_catch_all")} class="btn btn-primary">
+      Delete catch-all logs
+    </.link>
+  </:actions>
 </.header>
 
 <.table
