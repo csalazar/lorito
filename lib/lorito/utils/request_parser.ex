@@ -17,7 +17,7 @@ defmodule Lorito.Utils.RequestParser do
   defp remove_fly_headers(headers) do
     headers
     |> Enum.reject(fn {header, _value} ->
-      String.starts_with?(header, ["fly-", "x-forwarded-", "via"])
+      String.starts_with?(header, ["fly-", "x-forwarded-", "via", "x-request-start"])
     end)
   end
 
