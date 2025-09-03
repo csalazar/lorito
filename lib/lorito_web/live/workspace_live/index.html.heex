@@ -1,7 +1,12 @@
 <.header>
-  Listing Workspaces
+  Project {@project.name}
   <:subtitle>
-    <.live_component module={LoritoWeb.ContextSubtitleComponent} id="subtitle" project={@project} />
+    <.live_component
+      module={LoritoWeb.ContextSubtitleComponent}
+      id="subtitle"
+      project={@project}
+      display_name={false}
+    />
   </:subtitle>
   <:actions>
     <div class="dropdown dropdown-hover">
@@ -28,6 +33,8 @@
     </.link>
   </:actions>
 </.header>
+
+<div class="divider divider-accent divider-start pt-16">Workspaces</div>
 
 <.table
   id="workspaces"
