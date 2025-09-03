@@ -88,6 +88,7 @@ defmodule LoritoWeb.Router do
 
         live "/workspaces", WorkspaceLive.Index, :index
         live "/workspaces/from_template", WorkspaceLive.Index, :add_new_workspace_from_template
+        live "/workspaces/edit_project", WorkspaceLive.Index, :edit_project
         live "/workspaces/:workspace_id", WorkspaceLive.Show, :show
         live "/workspaces/:workspace_id/edit", WorkspaceLive.Index, :edit
         live "/workspaces/:workspace_id/show/edit", WorkspaceLive.Show, :edit

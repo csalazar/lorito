@@ -19,6 +19,13 @@
         </li>
       </ul>
     </div>
+
+    <.link
+      patch={~p"/_lorito/projects/#{@project}/workspaces/edit_project"}
+      class="btn btn-secondary"
+    >
+      Edit project
+    </.link>
   </:actions>
 </.header>
 
@@ -92,6 +99,22 @@
     title={@page_title}
     action={@live_action}
     workspace={@workspace}
+    project={@project}
+    patch={~p"/_lorito/projects/#{@project}/workspaces"}
+  />
+</.modal>
+
+<.modal
+  :if={@live_action in [:edit_project]}
+  id="edit-project-modal"
+  show
+  on_cancel={JS.patch(~p"/_lorito/projects/#{@project}/workspaces")}
+>
+  <.live_component
+    module={LoritoWeb.ProjectLive.FormComponent}
+    id={@project.id}
+    title={@page_title}
+    action={@live_action}
     project={@project}
     patch={~p"/_lorito/projects/#{@project}/workspaces"}
   />

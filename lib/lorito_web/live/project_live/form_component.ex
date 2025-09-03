@@ -54,7 +54,7 @@ defmodule LoritoWeb.ProjectLive.FormComponent do
     save_project(socket, socket.assigns.action, project_params)
   end
 
-  defp save_project(socket, :edit, project_params) do
+  defp save_project(socket, action, project_params) when action in [:edit, :edit_project] do
     case Projects.update_project(socket.assigns.project, project_params) do
       {:ok, project} ->
         notify_parent({:saved, project})

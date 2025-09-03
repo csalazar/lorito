@@ -3,6 +3,7 @@ defmodule LoritoWeb.WorkspaceLive.Index do
 
   alias Lorito.Workspaces
   alias Lorito.Workspaces.Workspace
+  alias Lorito.Projects.Project
 
   @impl true
   def mount(_params, _session, %{assigns: %{project: project}} = socket) do
@@ -32,10 +33,21 @@ defmodule LoritoWeb.WorkspaceLive.Index do
     |> assign(:workspace, %Workspace{})
   end
 
+  defp apply_action(socket, :edit_project, _params) do
+    socket
+    |> assign(:page_title, "Edit Project")
+    |> assign(:workspace, %Workspace{})
+  end
+
   @impl true
   def handle_info({_, {:saved, %Workspace{} = workspace}}, socket) do
     workspace = Workspaces.get_workspace!(workspace.id)
     {:noreply, stream_insert(socket, :workspaces, workspace)}
+  end
+
+  @impl true
+  def handle_info({_, {:saved, %Project{} = project}}, socket) do
+    {:noreply, assign(socket, :project, project)}
   end
 
   @impl true
