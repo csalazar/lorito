@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+
+## v0.3.0
+
+### Changed
+
+- Major rewrite to Ash framework. The code is shorter and easier to maintain.
+  The main reason for this is to make lorito AI-first by using Ash features
+  and support for more log types (i.e. DNS) could be implemented elegantly.
+
+### Added
+
+- Support for scoped logs that belong to either a project or a workspace.
+
+### Fixed
+
+- Improve test suite with Ash helpers
+- Fix many minor bugs
+
 ## v0.2.0
 ### Added
 - Support for subdomains: a subdomain can be assigned to a project.
