@@ -30,8 +30,7 @@ defmodule RequestLogger do
       |> Logs.gather_log_attributes()
 
     if not RequestParser.is_internal_request(attributes) do
-      attributes
-      |> Logs.create_log()
+      {:ok, _} = Logs.create_log(attributes)
     end
   end
 end
@@ -70,7 +69,7 @@ defmodule LoritoWeb.ResponseHandler do
   def replace_placeholders(%Response{body: body, placeholders: placeholders}) do
     placeholders
     |> Enum.reduce(body, fn %Response.Placeholder{} = placeholder, modified_body ->
-      response = Responses.get_response!(placeholder.value)
+      response = Responses.get_response_by_id!(placeholder.value)
       String.replace(modified_body, placeholder.icon, response.route)
     end)
   end
@@ -113,14 +112,14 @@ defmodule LoritoWeb.ResponseHandler do
 
       response =
         Enum.at(rebinding.responses, index)
-        |> Responses.get_response!()
+        |> Responses.get_response_by_id!()
 
       {:ok, response}
     else
       {:not_found, nil} ->
         base_responses =
           if workspace.template_id do
-            Lorito.Templates.get_template!(workspace.template_id).responses
+            Lorito.Templates.get_template_by_id!(workspace.template_id).responses
           else
             workspace.responses
           end
@@ -141,15 +140,15 @@ defmodule LoritoWeb.PublicController do
   """
   def get_workspace(path) do
     # Check if the path is a custom path
-    case Workspaces.get_workspace(%{path: path}) do
-      %Workspace{} = workspace ->
+    case Workspaces.get_workspace_by_path(path) do
+      {:ok, workspace} ->
         {:ok, workspace, []}
 
-      nil ->
+      {:error, _} ->
         with [project_id, workspace_id | route] <- path |> String.split("/"),
              workspace_id <- String.slice(workspace_id, 0, 6),
-             %Workspace{} = workspace <-
-               Workspaces.get_workspace(%{project: project_id, id: workspace_id}) do
+             {:ok, workspace} <-
+               Workspaces.get_workspace(%{id: workspace_id, project_id: project_id}) do
           {:ok, workspace, route}
         else
           _ ->
@@ -195,7 +194,7 @@ defmodule LoritoWeb.PublicController do
 
   def forward_request({:ok, :catch_all}, conn) do
     with subdomain when not is_nil(subdomain) <- LoritoWeb.Utils.get_subdomain(conn),
-         project when not is_nil(project) <- Projects.get_project(%{subdomain: subdomain}) do
+         {:ok, project} <- Projects.get_project_by_subdomain(subdomain) do
       RequestLogger.log(conn, project)
     else
       _ ->
@@ -225,7 +224,7 @@ defmodule LoritoWeb.PublicController do
   @doc """
   Main entrypoint for handling requests.
   """
-  def process_requests(conn, %{"route" => paths} = _params) do
+  def process_requests(conn, %{"route" => paths}) do
     path =
       URI.encode(Enum.join(paths, "/"))
 

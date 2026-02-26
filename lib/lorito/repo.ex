@@ -1,17 +1,24 @@
 defmodule Lorito.Repo do
-  use Ecto.Repo,
-    otp_app: :lorito,
-    adapter: Ecto.Adapters.Postgres
+  use AshPostgres.Repo,
+    otp_app: :lorito
 
   require Ecto.Query
 
-  @tenant_key {__MODULE__, :user}
-
-  def put_user(user) do
-    Process.put(@tenant_key, user)
+  @impl true
+  def installed_extensions do
+    # Add extensions here, and the migration generator will install them.
+    ["ash-functions", "citext"]
   end
 
-  def get_user() do
-    Process.get(@tenant_key)
+  # Don't open unnecessary transactions
+  # will default to `false` in 4.0
+  @impl true
+  def prefer_transaction? do
+    false
+  end
+
+  @impl true
+  def min_pg_version do
+    %Version{major: 16, minor: 0, patch: 0}
   end
 end

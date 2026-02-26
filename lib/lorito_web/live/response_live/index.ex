@@ -17,7 +17,7 @@ defmodule LoritoWeb.ResponseLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     socket
     |> assign(:page_title, "Edit Response")
-    |> assign(:response, Responses.get_response!(id))
+    |> assign(:response, Responses.get_response_by_id!(id))
   end
 
   defp apply_action(socket, :new, _params) do
@@ -39,8 +39,8 @@ defmodule LoritoWeb.ResponseLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    response = Responses.get_response!(id)
-    {:ok, _} = Responses.delete_response(response)
+    response = Responses.get_response_by_id!(id)
+    :ok = Responses.delete_response(response)
 
     {:noreply, stream_delete(socket, :responses, response)}
   end

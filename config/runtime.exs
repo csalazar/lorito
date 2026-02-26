@@ -67,4 +67,6 @@ if config_env() == :prod do
   else
     :error -> IO.puts("Sentry DSN not set, skipping Sentry configuration")
   end
+
+  config :lorito, token_signing_secret: secret_key_base
 end

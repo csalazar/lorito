@@ -44,10 +44,11 @@
 >
   <.live_component
     module={LoritoWeb.ProjectLive.FormComponent}
-    id={@project.id || :new}
+    id={(@project && @project.id) || :new}
     title={@page_title}
     action={@live_action}
     project={@project}
+    current_user={@current_user}
     patch={~p"/_lorito/projects"}
   />
 </.modal>

@@ -4,3 +4,5 @@
 
 /* This file is for your main application CSS */
 @import "../../deps/live_monaco_editor/priv/static/live_monaco_editor.min.css";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));

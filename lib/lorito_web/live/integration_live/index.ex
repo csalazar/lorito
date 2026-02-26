@@ -1,12 +1,12 @@
 defmodule LoritoWeb.IntegrationLive.Index do
   use LoritoWeb, :live_view
 
-  alias Lorito.Integrations
-  alias Lorito.Integrations.Integration
+  alias Lorito.Logs
+  alias Lorito.Logs.Integration
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, stream(socket, :integrations, Integrations.list_integrations())}
+    {:ok, stream(socket, :integrations, Logs.list_integrations!())}
   end
 
   @impl true
@@ -17,7 +17,7 @@ defmodule LoritoWeb.IntegrationLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     socket
     |> assign(:page_title, "Edit Integration")
-    |> assign(:integration, Integrations.get_integration!(id))
+    |> assign(:integration, Logs.get_integration_by_id!(id))
   end
 
   defp apply_action(socket, :new, _params) do
@@ -39,15 +39,15 @@ defmodule LoritoWeb.IntegrationLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    integration = Integrations.get_integration!(id)
-    {:ok, _} = Integrations.delete_integration(integration)
+    integration = Logs.get_integration_by_id!(id)
+    :ok = Logs.delete_integration(integration)
 
     {:noreply, stream_delete(socket, :integrations, integration)}
   end
 
   @impl true
   def handle_event("send_probe", %{"id" => id}, socket) do
-    {:ok, _} = Integrations.get_integration!(id) |> Integrations.send_probe()
+    {:ok, _} = Logs.get_integration_by_id!(id) |> Logs.send_integration_probe()
 
     {:noreply,
      socket

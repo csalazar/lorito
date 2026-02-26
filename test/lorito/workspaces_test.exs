@@ -1,95 +1,23 @@
 defmodule Lorito.WorkspacesTest do
   use Lorito.DataCase
-
-  alias Lorito.Workspaces
-  alias Lorito.Workspaces.Workspace
-  import Lorito.AccountsFixtures
-
-  setup do
-    owner = user_fixture()
-
-    Lorito.Repo.put_user(owner)
-
-    {:ok, owner: owner}
-  end
+  import Lorito.Test.Generators
 
   describe "workspaces" do
-    import Lorito.WorkspacesFixtures
-    import Lorito.ProjectsFixtures
+    test "path uniqueness" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      generate(workspace(project: project, actor: user, path: "custom-path"))
 
-    test "list_workspaces/1 returns all workspaces in project" do
-      project_1 = project_fixture()
-      project_2 = project_fixture()
-
-      workspace_fixture(%{}, project: project_1)
-      workspace_fixture(%{}, project: project_1)
-      workspace_fixture(%{}, project: project_2)
-
-      assert Enum.count(Workspaces.list_workspaces(%{project: project_1})) == 2
+      assert_raise Ash.Error.Invalid, fn ->
+        generate(workspace(project: project, actor: user, path: "custom-path"))
+      end
     end
 
-    test "get_workspace!/1 returns the workspace with given id" do
-      workspace = workspace_fixture()
-      w = Workspaces.get_workspace!(workspace.id)
-      assert w.id == workspace.id
-    end
-
-    test "get_workspace/1 with project and id returns the right workspace" do
-      workspace = workspace_fixture()
-      w = Workspaces.get_workspace(%{project: workspace.project_id, id: workspace.id})
-      assert w.id == workspace.id
-    end
-
-    test "get_workspace/1 with empty path returns nil" do
-      w = Workspaces.get_workspace(%{path: ""})
-      assert w == nil
-    end
-
-    test "get_workspace/1 with path returns the right workspace" do
-      workspace = workspace_fixture(%{"path" => "custom_path"})
-      w = Workspaces.get_workspace(%{path: "custom_path"})
-      assert w.id == workspace.id
-    end
-
-    test "create_workspace/1 with valid data creates a workspace" do
-      project = project_fixture()
-
-      {:ok, %Workspace{} = workspace} =
-        Workspaces.create_workspace(%{"name" => "ws1", "project" => project})
-
-      assert workspace.project_id == project.id
-    end
-
-    test "create_workspace/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Workspaces.create_workspace(%{notifiable: "abc"})
-    end
-
-    test "update_workspace/2 with valid data updates the workspace" do
-      workspace = workspace_fixture()
-      update_attrs = %{name: "new name"}
-
-      assert {:ok, %Workspace{} = workspace} =
-               Workspaces.update_workspace(workspace, update_attrs)
-
-      assert workspace.name == "new name"
-    end
-
-    test "update_workspace/2 with invalid path fails" do
-      workspace = workspace_fixture()
-      update_attrs = %{path: "aaa/bbb"}
-
-      assert {:error, %Ecto.Changeset{}} = Workspaces.update_workspace(workspace, update_attrs)
-    end
-
-    test "delete_workspace/1 deletes the workspace" do
-      workspace = workspace_fixture()
-      assert {:ok, %Workspace{}} = Workspaces.delete_workspace(workspace)
-      assert_raise Ecto.NoResultsError, fn -> Workspaces.get_workspace!(workspace.id) end
-    end
-
-    test "change_workspace/1 returns a workspace changeset" do
-      workspace = workspace_fixture()
-      assert %Ecto.Changeset{} = Workspaces.change_workspace(workspace)
+    test "actor is assigned on workspace creation" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      assert workspace.user_id == user.id
     end
   end
 end

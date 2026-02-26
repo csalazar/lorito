@@ -1,7 +1,7 @@
 defmodule LoritoWeb.IntegrationLive.FormComponent do
   use LoritoWeb, :live_component
 
-  alias Lorito.Integrations
+  alias Lorito.Logs
 
   @impl true
   def render(assigns) do
@@ -24,7 +24,7 @@ defmodule LoritoWeb.IntegrationLive.FormComponent do
           type="select"
           label="Type"
           prompt="Choose a value"
-          options={Ecto.Enum.values(Lorito.Integrations.Integration, :type)}
+          options={[{"discord", "discord"}]}
         />
         <.input field={@form[:webhook_url]} type="text" label="Webhook url" />
         <:actions>
@@ -36,61 +36,51 @@ defmodule LoritoWeb.IntegrationLive.FormComponent do
   end
 
   @impl true
-  def update(%{integration: integration} = assigns, socket) do
-    changeset = Integrations.change_integration(integration)
+  def update(%{action: :new, current_user: current_user} = assigns, socket) do
+    form = Logs.form_to_create_integration(actor: current_user)
 
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_form(changeset)}
+     |> assign(form: to_form(form))}
   end
 
   @impl true
-  def handle_event("validate", %{"integration" => integration_params}, socket) do
-    changeset =
-      socket.assigns.integration
-      |> Integrations.change_integration(integration_params)
-      |> Map.put(:action, :validate)
+  def update(%{action: :edit, integration: integration} = assigns, socket) do
+    form = Logs.form_to_update_integration(integration)
 
-    {:noreply, assign_form(socket, changeset)}
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(form: to_form(form))}
   end
 
-  def handle_event("save", %{"integration" => integration_params}, socket) do
-    save_integration(socket, socket.assigns.action, integration_params)
+  @impl true
+  def handle_event("validate", %{"form" => params}, socket) do
+    form = AshPhoenix.Form.validate(socket.assigns.form, params)
+    {:noreply, assign(socket, :form, form)}
   end
 
-  defp save_integration(socket, :edit, integration_params) do
-    case Integrations.update_integration(socket.assigns.integration, integration_params) do
+  def handle_event("save", %{"form" => form_data}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.form, params: form_data) do
       {:ok, integration} ->
         notify_parent({:saved, integration})
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Integration updated successfully")
-         |> push_patch(to: socket.assigns.patch)}
+        socket =
+          socket
+          |> put_flash(:info, "Integration saved successfully")
+          |> push_patch(to: socket.assigns.patch)
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply, socket}
+
+      {:error, form} ->
+        socket =
+          socket
+          |> put_flash(:error, "Could not save project data")
+          |> assign(:form, form)
+
+        {:noreply, socket}
     end
-  end
-
-  defp save_integration(socket, :new, integration_params) do
-    case Integrations.create_integration(integration_params) do
-      {:ok, integration} ->
-        notify_parent({:saved, integration})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Integration created successfully")
-         |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
-    end
-  end
-
-  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

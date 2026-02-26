@@ -1,13 +1,15 @@
 defmodule Lorito.Templates do
-  @moduledoc """
-  The Templates context.
-  """
-  alias Lorito.Templates.TemplateRepo
+  use Ash.Domain,
+    otp_app: :lorito,
+    extensions: [AshPhoenix]
 
-  defdelegate list_templates(filters \\ %{}), to: TemplateRepo
-  defdelegate get_template!(id), to: TemplateRepo
-  defdelegate create_template(attrs \\ %{}), to: TemplateRepo
-  defdelegate update_template(template, attrs \\ %{}), to: TemplateRepo
-  defdelegate delete_template(template), to: TemplateRepo
-  defdelegate change_template(template, attrs \\ %{}), to: TemplateRepo
+  resources do
+    resource Lorito.Templates.Template do
+      define :list_templates, action: :read
+      define :create_template, action: :create
+      define :delete_template, action: :destroy
+      define :update_template, action: :update
+      define :get_template_by_id, action: :get_template_by_id, get_by: [:id]
+    end
+  end
 end

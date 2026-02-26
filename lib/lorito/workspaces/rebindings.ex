@@ -1,7 +1,7 @@
 defmodule Lorito.Workspaces.Rebindings do
   alias Lorito.Workspaces.Workspace
   alias Lorito.Responses.Response
-  alias Lorito.Workspaces.WorkspaceRepo
+  alias Lorito.Workspaces
 
   @available_icons ["🐙", "🐼", "🐤", "🐸", "🐳", "🦆"]
 
@@ -63,17 +63,13 @@ defmodule Lorito.Workspaces.Rebindings do
         %Workspace{responses: responses} = workspace,
         %Response{route: route} = response
       ) do
-    rebindings = Enum.map(workspace.rebindings, fn r -> Map.from_struct(r) end)
-    rebound_routes = Enum.map(rebindings, fn r -> r.route end)
-
     updated_rebindings =
-      if route in rebound_routes do
-        add_response_to_rebinding(rebindings, response)
-      else
-        add_new_rebinding(rebindings, responses, route)
+      case route in workspace.rebound_routes do
+        true -> add_response_to_rebinding(workspace.rebindings, response)
+        false -> add_new_rebinding(workspace.rebindings, responses, route)
       end
 
-    WorkspaceRepo.update_workspace(workspace, %{rebindings: updated_rebindings})
+    Workspaces.update_rebindings(workspace, updated_rebindings)
   end
 
   @doc """
@@ -86,8 +82,8 @@ defmodule Lorito.Workspaces.Rebindings do
         %Response{route: route} = response
       ) do
     # Get the workspace with the latest data
-    workspace = WorkspaceRepo.get_workspace!(workspace.id)
-    rebindings = Enum.map(workspace.rebindings, fn r -> Map.from_struct(r) end)
+    workspace =
+      Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
 
     must_delete_rebinding =
       Enum.filter(workspace.responses, fn r -> r.route == route end)
@@ -95,19 +91,17 @@ defmodule Lorito.Workspaces.Rebindings do
 
     updated_rebindings =
       if must_delete_rebinding do
-        delete_rebinding(rebindings, route)
+        delete_rebinding(workspace.rebindings, route)
       else
-        delete_response_from_rebinding(rebindings, response)
+        delete_response_from_rebinding(workspace.rebindings, response)
       end
 
-    WorkspaceRepo.update_workspace(workspace, %{rebindings: updated_rebindings})
+    Workspaces.update_rebindings(workspace, updated_rebindings)
   end
 
   def activate_response(%Workspace{} = workspace, %Response{} = response) do
-    rebindings = Enum.map(workspace.rebindings, fn r -> Map.from_struct(r) end)
-
     updated_rebindings =
-      Enum.map(rebindings, fn r ->
+      Enum.map(workspace.rebindings, fn r ->
         if r.route == response.route do
           response_index = Enum.find_index(r.responses, fn r -> r == response.id end)
 
@@ -120,7 +114,7 @@ defmodule Lorito.Workspaces.Rebindings do
         end
       end)
 
-    WorkspaceRepo.update_workspace(workspace, %{rebindings: updated_rebindings})
+    Workspaces.update_rebindings(workspace, updated_rebindings)
   end
 
   def get_rebinding(%Workspace{} = workspace, route) do

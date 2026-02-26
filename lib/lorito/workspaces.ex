@@ -1,16 +1,27 @@
+alias Lorito.Workspaces.Rebindings
+
 defmodule Lorito.Workspaces do
-  alias Lorito.Workspaces.WorkspaceRepo
-  alias Lorito.Workspaces.Rebindings
+  use Ash.Domain,
+    otp_app: :lorito,
+    extensions: [AshPhoenix]
 
-  defdelegate list_workspaces(filters), to: WorkspaceRepo
-  defdelegate get_workspace!(id), to: WorkspaceRepo
-  defdelegate get_workspace(filters), to: WorkspaceRepo
-  defdelegate create_workspace(attrs), to: WorkspaceRepo
-  defdelegate update_workspace(workspace, attrs \\ %{}), to: WorkspaceRepo
-  defdelegate delete_workspace(workspace), to: WorkspaceRepo
-  defdelegate change_workspace(workspace, attrs \\ %{}), to: WorkspaceRepo
+  forms do
+    form(:create_workspace, args: [:project_id])
+  end
 
-  defdelegate promote_response_to_rebinding(workspace, response), to: Rebindings
-  defdelegate demote_response_from_rebindings(workspace, route), to: Rebindings
-  defdelegate is_response_active?(rebinding, response), to: Rebindings
+  resources do
+    resource Lorito.Workspaces.Workspace do
+      define :get_workspace, action: :get_workspace
+      define :get_workspace_by_path, action: :get_workspace_by_path, args: [:path]
+      define :list_workspaces_by_project, action: :list_workspaces_by_project, args: [:project_id]
+      define :create_workspace, action: :create
+      define :delete_workspace, action: :destroy
+      define :update_workspace, action: :update
+      define :update_rebindings, action: :update_rebindings, args: [:rebindings]
+
+      defdelegate promote_response_to_rebinding(workspace, response), to: Rebindings
+      defdelegate demote_response_from_rebindings(workspace, route), to: Rebindings
+      defdelegate is_response_active?(rebinding, response), to: Rebindings
+    end
+  end
 end

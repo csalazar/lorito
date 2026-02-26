@@ -1,7 +1,7 @@
 <.header>
   <div class="flex space-x-4">
     <div>
-      Workspace {Lorito.Workspaces.Workspace.get_displayable_name(@workspace)}
+      Workspace {@workspace.displayable_name}
 
       <div :if={@workspace.template} class="badge badge-secondary">
         {@workspace.template.name}
@@ -144,7 +144,7 @@
   <:col :let={{_id, log}} label="IP">{log.ip}</:col>
   <:col :let={{_id, log}} label="Method">{log.method}</:col>
   <:col :let={{_id, log}} label="Url">{determine_relative_url(@workspace, log.url)}</:col>
-  <:col :let={{_id, log}} label="Body Length">{String.length(log.body)}</:col>
+  <:col :let={{_id, log}} label="Body Length">{log.body && String.length(log.body)}</:col>
   <:action :let={{_id, log}}>
     <div class="sr-only">
       <.link navigate={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}/logs/#{log}"}>
@@ -194,6 +194,7 @@
     action={@live_action}
     response={@response}
     workspace={@workspace}
+    current_user={@current_user}
     patch={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}"}
   />
 </.modal>

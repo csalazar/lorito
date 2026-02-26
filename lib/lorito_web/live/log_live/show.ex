@@ -13,7 +13,7 @@ defmodule LoritoWeb.LogLive.Show do
     {:noreply,
      socket
      |> assign(:page_title, "Show Log")
-     |> assign(:log, Logs.get_log!(id))
+     |> assign(:log, Logs.get_log_by_id!(id))
      |> assign(:live_action, live_action)}
   end
 end

@@ -5,31 +5,42 @@ defmodule LoritoWeb.WorkspaceLive.Show do
   alias Lorito.Responses
   alias Lorito.Logs
   alias Lorito.Responses.Response
-  alias Lorito.Workspaces.Workspace
 
   @impl true
-  def mount(_params, _session, %{assigns: %{workspace: workspace}} = socket) do
-    if connected?(socket), do: Logs.PubSub.subscribe(workspace.id)
+  def mount(
+        %{"workspace_id" => workspace_id, "project_id" => project_id},
+        _session,
+        socket
+      ) do
+    if connected?(socket),
+      do: Phoenix.PubSub.subscribe(Lorito.PubSub, "log:#{workspace_id}:created")
 
-    {:ok, socket |> stream(:responses, workspace.responses) |> stream(:logs, workspace.logs)}
+    workspace =
+      Workspaces.get_workspace!(%{id: workspace_id, project_id: project_id})
+
+    {:ok,
+     socket
+     |> assign(:project, workspace.project)
+     |> stream(:responses, workspace.responses)
+     |> stream(:logs, workspace.logs)}
   end
 
   @impl true
   def handle_params(
-        %{"workspace_id" => workspace_id} = params,
+        %{"workspace_id" => workspace_id, "project_id" => project_id} = params,
         _,
         socket
       ) do
     response =
       case Map.get(params, "response_id") do
         nil -> %Response{}
-        response_id -> Responses.get_response!(response_id)
+        response_id -> Responses.get_response_by_id!(response_id)
       end
 
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:workspace, Workspaces.get_workspace!(workspace_id))
+     |> assign(:workspace, Workspaces.get_workspace!(%{id: workspace_id, project_id: project_id}))
      |> assign(:response, response)}
   end
 
@@ -40,16 +51,14 @@ defmodule LoritoWeb.WorkspaceLive.Show do
 
   @impl true
   def handle_event("delete_response", %{"id" => id}, %{assigns: %{workspace: workspace}} = socket) do
-    response = Responses.get_response!(id)
-    {:ok, _} = Responses.delete_response(response)
+    response = Responses.get_response_by_id!(id)
+    :ok = Responses.delete_response(response)
 
-    rebound_routes = Enum.map(workspace.rebindings, fn r -> r.route end)
-
-    if Enum.member?(rebound_routes, response.route) do
+    if Enum.member?(workspace.rebound_routes, response.route) do
       {:ok, _} = Lorito.Workspaces.demote_response_from_rebindings(workspace, response)
     end
 
-    workspace = Workspaces.get_workspace!(workspace.id)
+    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
 
     {:noreply,
      socket
@@ -59,8 +68,8 @@ defmodule LoritoWeb.WorkspaceLive.Show do
 
   @impl true
   def handle_event("delete_log", %{"id" => id}, socket) do
-    log = Logs.get_log!(id)
-    {:ok, _} = Logs.delete_log(log)
+    log = Logs.get_log_by_id!(id)
+    :ok = Logs.delete_log(log)
 
     {:noreply, stream_delete(socket, :logs, log)}
   end
@@ -71,9 +80,9 @@ defmodule LoritoWeb.WorkspaceLive.Show do
         %{"id" => id},
         %{assigns: %{workspace: workspace}} = socket
       ) do
-    response = Responses.get_response!(id)
-    Workspaces.Rebindings.activate_response(workspace, response)
-    workspace = Workspaces.get_workspace!(workspace.id)
+    response = Responses.get_response_by_id!(id)
+    {:ok, _} = Workspaces.Rebindings.activate_response(workspace, response)
+    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
 
     {:noreply,
      socket
@@ -92,7 +101,7 @@ defmodule LoritoWeb.WorkspaceLive.Show do
       {:ok, _} = Lorito.Workspaces.promote_response_to_rebinding(workspace, response)
     end
 
-    workspace = Workspaces.get_workspace!(workspace.id)
+    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
 
     {:noreply,
      socket
@@ -101,7 +110,13 @@ defmodule LoritoWeb.WorkspaceLive.Show do
   end
 
   @impl true
-  def handle_info({Lorito.Logs.PubSub, [:log, :created], log}, socket) do
+  def handle_info(
+        %Phoenix.Socket.Broadcast{
+          event: "create",
+          payload: %{data: log}
+        },
+        socket
+      ) do
     {:noreply, stream_insert(socket, :logs, log, at: 0)}
   end
 
@@ -111,7 +126,7 @@ defmodule LoritoWeb.WorkspaceLive.Show do
   end
 
   def determine_relative_url(workspace, path) do
-    case String.replace(path, Workspace.get_path(workspace), "") do
+    case String.replace(path, workspace.computed_path, "") do
       "" -> "/"
       uri -> uri
     end

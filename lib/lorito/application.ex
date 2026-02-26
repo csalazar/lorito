@@ -14,7 +14,8 @@ defmodule Lorito.Application do
       {Phoenix.PubSub, name: Lorito.PubSub},
       # Start the Endpoint (http/https)
       LoritoWeb.Endpoint,
-      LoritoWeb.RateLimit
+      LoritoWeb.RateLimit,
+      {AshAuthentication.Supervisor, [otp_app: :lorito]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -32,7 +32,7 @@ defmodule LoritoWeb.Utils do
   def build_workspace_url(%Workspace{} = workspace) do
     LoritoWeb.Endpoint.url()
     |> add_subdomain_to_url(workspace.project)
-    |> URI.merge(Workspace.get_path(workspace))
+    |> URI.merge(workspace.computed_path)
     |> URI.to_string()
   end
 

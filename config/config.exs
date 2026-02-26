@@ -7,9 +7,59 @@
 # General application configuration
 import Config
 
+config :ash,
+  allow_forbidden_field_for_relationships_by_default?: true,
+  include_embedded_source_by_default?: false,
+  show_keysets_for_all_actions?: false,
+  default_page_type: :keyset,
+  policies: [no_filter_static_forbidden_reads?: false],
+  keep_read_action_loads_when_loading?: false,
+  default_actions_require_atomic?: true,
+  read_action_after_action_hooks_in_order?: true,
+  bulk_actions_default_to_errors?: true,
+  transaction_rollback_on_error?: true
+
+config :ash, :pub_sub, debug?: true
+
+config :spark,
+  formatter: [
+    remove_parens?: true,
+    "Ash.Resource": [
+      section_order: [
+        :authentication,
+        :token,
+        :user_identity,
+        :postgres,
+        :resource,
+        :code_interface,
+        :actions,
+        :policies,
+        :pub_sub,
+        :preparations,
+        :changes,
+        :validations,
+        :multitenancy,
+        :attributes,
+        :relationships,
+        :calculations,
+        :aggregates,
+        :identities
+      ]
+    ],
+    "Ash.Domain": [section_order: [:resources, :policies, :authorization, :domain, :execution]]
+  ]
+
 config :lorito,
   ecto_repos: [Lorito.Repo],
-  generators: [binary_id: true]
+  generators: [binary_id: true],
+  ash_domains: [
+    Lorito.Logs,
+    Lorito.Workspaces,
+    Lorito.Responses,
+    Lorito.Templates,
+    Lorito.Projects,
+    Lorito.Accounts
+  ]
 
 config :nanoid,
   size: 8,
@@ -54,22 +104,6 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
-
-config :versioce,
-  changelog: [
-    datagrabber: Versioce.Changelog.DataGrabber.Git,
-    formatter: Versioce.Changelog.Formatter.Keepachangelog
-  ],
-  files: [
-    "README.md",
-    "mix.exs"
-  ],
-  git: [
-    dirty_add: true,
-    tag_template: "v{version}",
-    tag_message_template: "Release v{version}"
-  ],
-  post_hooks: [Versioce.PostHooks.Git.Release]
 
 if config_env() in [:dev, :test] do
   import_config ".env.exs"

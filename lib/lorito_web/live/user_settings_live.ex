@@ -7,7 +7,7 @@ defmodule LoritoWeb.UserSettingsLive do
       Account Settings
     </.header>
 
-    <.simple_form for={@form} id="settings-form" phx-submit="save">
+    <.simple_form for={@form} id="user-settings-form" phx-submit="save">
       <.input
         field={@form[:timezone]}
         type="select"
@@ -24,26 +24,32 @@ defmodule LoritoWeb.UserSettingsLive do
   end
 
   def mount(_params, _session, socket) do
-    changeset = Lorito.Accounts.change_user_settings(socket.assigns.current_user)
+    current_user = socket.assigns.current_user
+    form = Lorito.Accounts.form_to_update_user(current_user, actor: current_user)
 
     {:ok,
      socket
-     |> assign_form(changeset)}
+     |> assign(form: to_form(form))}
   end
 
-  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
-  end
+  def handle_event("save", %{"form" => form_data}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.form, params: form_data) do
+      {:ok, user} ->
+        notify_parent({:saved, user})
 
-  def handle_event("save", %{"user" => user_params}, socket) do
-    case Lorito.Accounts.update_user(socket.assigns.current_user, user_params) do
-      {:ok, _user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "User updated successfully")}
+        socket =
+          socket
+          |> put_flash(:info, "User saved successfully")
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply, socket}
+
+      {:error, form} ->
+        socket =
+          socket
+          |> put_flash(:error, "Could not save user data")
+          |> assign(:form, form)
+
+        {:noreply, socket}
     end
   end
 
@@ -59,4 +65,6 @@ defmodule LoritoWeb.UserSettingsLive do
       {"#{tz} (#{offset})", tz}
     end
   end
+
+  defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 end

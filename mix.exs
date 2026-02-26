@@ -12,7 +12,8 @@ defmodule Lorito.MixProject do
       deps: deps(),
       preferred_cli_env: [
         test: :test
-      ]
+      ],
+      consolidate_protocols: Mix.env() != :dev
     ]
   end
 
@@ -32,6 +33,12 @@ defmodule Lorito.MixProject do
 
   defp deps do
     [
+      {:ash_authentication_phoenix, "~> 2.0"},
+      {:ash_postgres, "~> 2.0"},
+      {:picosat_elixir, "~> 0.2"},
+      {:sourceror, "~> 1.8", only: [:dev, :test]},
+      {:ash, "~> 3.18"},
+      {:igniter, "~> 0.6", only: [:dev, :test]},
       {:bcrypt_elixir, "~> 3.0"},
       {:phoenix, "~> 1.8"},
       {:phoenix_ecto, "~> 4.4"},
@@ -55,16 +62,18 @@ defmodule Lorito.MixProject do
       {:remote_ip, "~> 1.0"},
       {:versioce, "~> 2.0.0", only: :dev},
       {:git_cli, "~> 0.3.0", only: :dev},
-      {:sentry, "~> 11.0.2"}
+      {:sentry, "~> 11.0.2"},
+      {:faker, "~> 0.18", only: :test},
+      {:mock, "~> 0.3.0", only: :test}
     ]
   end
 
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
+      setup: ["deps.get", "ash.setup", "assets.setup", "assets.build", "run priv/repo/seeds.exs"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      test: ["ash.setup --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind default", "esbuild default"],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"],
@@ -77,8 +86,9 @@ defmodule Lorito.MixProject do
     shell = Mix.shell()
 
     email = shell.prompt("email: ") |> String.trim()
+    password = :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false) |> String.trim()
 
-    {:ok, password} = Lorito.Accounts.add_user_from_cli(email)
+    Lorito.Accounts.register_user(%{email: email, password: password}, authorize?: false)
     IO.puts("User #{email} added with password: #{password}")
   end
 end

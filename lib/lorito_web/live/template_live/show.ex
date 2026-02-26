@@ -6,24 +6,24 @@ defmodule LoritoWeb.TemplateLive.Show do
   alias Lorito.Responses
 
   @impl true
-  def mount(%{"template_id" => template_id}, _session, socket) do
-    template = Lorito.Templates.get_template!(template_id)
+  def mount(%{"id" => id}, _session, socket) do
+    template = Lorito.Templates.get_template_by_id!(id, load: [:responses])
 
     {:ok, socket |> stream(:responses, template.responses)}
   end
 
   @impl true
-  def handle_params(%{"template_id" => id} = params, _, socket) do
+  def handle_params(%{"id" => id} = params, _, socket) do
     response =
       case Map.get(params, "response_id") do
         nil -> %Response{}
-        response_id -> Responses.get_response!(response_id)
+        response_id -> Responses.get_response_by_id!(response_id)
       end
 
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:template, Templates.get_template!(id))
+     |> assign(:template, Templates.get_template_by_id!(id, load: [:responses]))
      |> assign(:response, response)}
   end
 
@@ -37,7 +37,7 @@ defmodule LoritoWeb.TemplateLive.Show do
         {LoritoWeb.ResponseLive.FormComponent, {:saved, _response}},
         %{assigns: %{template: template}} = socket
       ) do
-    template = Templates.get_template!(template.id)
+    template = Templates.get_template_by_id!(template.id, load: [:responses])
 
     {:noreply,
      socket |> stream(:responses, template.responses, reset: true) |> assign(template: template)}
@@ -50,10 +50,10 @@ defmodule LoritoWeb.TemplateLive.Show do
 
   @impl true
   def handle_event("delete_response", %{"id" => id}, %{assigns: %{template: template}} = socket) do
-    response = Responses.get_response!(id)
-    {:ok, _} = Responses.delete_response(response)
+    response = Responses.get_response_by_id!(id)
+    :ok = Responses.delete_response(response)
 
-    template = Templates.get_template!(template.id)
+    template = Templates.get_template_by_id!(template.id)
 
     {:noreply,
      socket

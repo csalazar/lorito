@@ -3,11 +3,19 @@ defmodule LoritoWeb.WorkspaceLive.Index do
 
   alias Lorito.Workspaces
   alias Lorito.Workspaces.Workspace
-  alias Lorito.Projects.Project
+  alias Lorito.Projects
 
   @impl true
-  def mount(_params, _session, %{assigns: %{project: project}} = socket) do
-    {:ok, stream(socket, :workspaces, Workspaces.list_workspaces(%{project: project}))}
+  def mount(%{"project_id" => project_id}, _session, socket) do
+    project = Projects.get_project_by_id!(project_id)
+
+    {:ok,
+     socket
+     |> assign(:project, project)
+     |> stream(
+       :workspaces,
+       Workspaces.list_workspaces_by_project!(project_id, load: [:template])
+     )}
   end
 
   @impl true
@@ -21,10 +29,10 @@ defmodule LoritoWeb.WorkspaceLive.Index do
     |> assign(:workspace, nil)
   end
 
-  defp apply_action(socket, :edit, %{"workspace_id" => id}) do
+  defp apply_action(%{assigns: %{project: project}} = socket, :edit, %{"workspace_id" => id}) do
     socket
     |> assign(:page_title, "Edit Workspace")
-    |> assign(:workspace, Workspaces.get_workspace!(id))
+    |> assign(:workspace, Workspaces.get_workspace!(%{id: id, project_id: project.id}))
   end
 
   defp apply_action(socket, :add_new_workspace_from_template, _params) do
@@ -41,27 +49,32 @@ defmodule LoritoWeb.WorkspaceLive.Index do
 
   @impl true
   def handle_info({_, {:saved, %Workspace{} = workspace}}, socket) do
-    workspace = Workspaces.get_workspace!(workspace.id)
+    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
     {:noreply, stream_insert(socket, :workspaces, workspace)}
   end
 
   @impl true
-  def handle_info({_, {:saved, %Project{} = project}}, socket) do
+  def handle_info({_, {:saved, project}}, socket) do
     {:noreply, assign(socket, :project, project)}
   end
 
   @impl true
-  def handle_event("delete", %{"id" => id}, socket) do
-    workspace = Workspaces.get_workspace!(id)
-    {:ok, _} = Workspaces.delete_workspace(workspace)
+  def handle_event("delete", %{"id" => id}, %{assigns: %{project: project}} = socket) do
+    workspace = Workspaces.get_workspace!(%{id: id, project_id: project.id})
+    :ok = Workspaces.delete_workspace(workspace)
 
     {:noreply, stream_delete(socket, :workspaces, workspace)}
   end
 
   @impl true
-  def handle_event("add_new_workspace", _, %{assigns: %{project: project}} = socket) do
-    {:ok, workspace} = Workspaces.create_workspace(%{"project" => project})
-    workspace = Workspaces.get_workspace!(workspace.id)
+  def handle_event(
+        "add_new_workspace",
+        _,
+        %{assigns: %{project: project, current_user: current_user}} = socket
+      ) do
+    workspace = Workspaces.create_workspace!(%{project_id: project.id}, actor: current_user)
+    # load again to get all the fields
+    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: project.id})
 
     {:noreply, stream_insert(socket, :workspaces, workspace)}
   end

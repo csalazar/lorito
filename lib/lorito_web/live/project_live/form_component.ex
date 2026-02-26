@@ -31,61 +31,52 @@ defmodule LoritoWeb.ProjectLive.FormComponent do
   end
 
   @impl true
-  def update(%{project: project} = assigns, socket) do
-    changeset = Projects.change_project(project)
+  def update(%{action: :new, current_user: current_user} = assigns, socket) do
+    form = Projects.form_to_create_project(actor: current_user)
 
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_form(changeset)}
+     |> assign(form: to_form(form))}
   end
 
   @impl true
-  def handle_event("validate", %{"project" => project_params}, socket) do
-    changeset =
-      socket.assigns.project
-      |> Projects.change_project(project_params)
-      |> Map.put(:action, :validate)
+  def update(%{action: action, project: project} = assigns, socket)
+      when action in [:edit, :edit_project] do
+    form = Projects.form_to_update_project(project)
 
-    {:noreply, assign_form(socket, changeset)}
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(form: to_form(form))}
   end
 
-  def handle_event("save", %{"project" => project_params}, socket) do
-    save_project(socket, socket.assigns.action, project_params)
+  @impl true
+  def handle_event("validate", %{"form" => params}, socket) do
+    form = AshPhoenix.Form.validate(socket.assigns.form, params)
+    {:noreply, assign(socket, :form, form)}
   end
 
-  defp save_project(socket, action, project_params) when action in [:edit, :edit_project] do
-    case Projects.update_project(socket.assigns.project, project_params) do
+  def handle_event("save", %{"form" => form_data}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.form, params: form_data) do
       {:ok, project} ->
         notify_parent({:saved, project})
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Project updated successfully")
-         |> push_patch(to: socket.assigns.patch)}
+        socket =
+          socket
+          |> put_flash(:info, "Project saved successfully")
+          |> push_patch(to: socket.assigns.patch)
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply, socket}
+
+      {:error, form} ->
+        socket =
+          socket
+          |> put_flash(:error, "Could not save project data")
+          |> assign(:form, form)
+
+        {:noreply, socket}
     end
-  end
-
-  defp save_project(socket, :new, project_params) do
-    case Projects.create_project(project_params) do
-      {:ok, project} ->
-        notify_parent({:saved, project})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Project created successfully")
-         |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
-    end
-  end
-
-  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

@@ -14,6 +14,9 @@
 >
   <:col :let={{_id, template}} label="Name">{template.name}</:col>
   <:action :let={{id, template}}>
+    <.link patch={~p"/_lorito/templates/#{template}/edit"} class="btn btn-ghost btn-sm">
+      <.icon name="hero-pencil-square" />
+    </.link>
     <.link
       phx-click={JS.push("delete", value: %{id: template.id}) |> hide("##{id}")}
       data-confirm="Are you sure?"
@@ -37,5 +40,6 @@
     action={@live_action}
     template={@template}
     patch={~p"/_lorito/templates"}
+    current_user={@current_user}
   />
 </.modal>

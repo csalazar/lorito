@@ -15,7 +15,7 @@
   <:item title="Workspace">
     <%= if @log.workspace do %>
       <.link navigate={~p"/_lorito/projects/#{@log.project}/workspaces/#{@log.workspace}"}>
-        {Lorito.Workspaces.Workspace.get_displayable_name(@log.workspace)}
+        {@log.workspace.displayable_name}
         <.icon name="hero-link" />
       </.link>
     <% else %>
@@ -80,7 +80,7 @@
   <% :log_show-> %>
     <.back navigate={~p"/_lorito/logs"}>Back to logs</.back>
   <% :workspace_log_show -> %>
-    <.back navigate={~p"/_lorito/projects/#{@project}/workspaces/#{@workspace}"}>
+    <.back navigate={~p"/_lorito/projects/#{@log.project}/workspaces/#{@log.workspace}"}>
       Back to workspace
     </.back>
 <% end %>

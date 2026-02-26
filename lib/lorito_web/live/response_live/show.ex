@@ -4,16 +4,33 @@ defmodule LoritoWeb.ResponseLive.Show do
   alias Lorito.Responses
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, socket}
+  def mount(
+        %{"id" => response_id, "project_id" => project_id, "workspace_id" => workspace_id},
+        _session,
+        socket
+      ) do
+    {:ok,
+     socket
+     |> assign(:page_title, page_title(socket.assigns.live_action))
+     |> assign(:project, Lorito.Projects.get_project_by_id!(project_id))
+     |> assign(
+       :workspace,
+       Lorito.Workspaces.get_workspace!(%{id: workspace_id, project_id: project_id})
+     )
+     |> assign(:response, Responses.get_response_by_id!(response_id))}
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _, socket) do
-    {:noreply,
-     socket
-     |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:response, Responses.get_response!(id))}
+  def handle_params(_, _, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(
+        {LoritoWeb.ResponseLive.FormComponent, {:saved, response}},
+        socket
+      ) do
+    {:noreply, assign(socket, :response, response)}
   end
 
   defp page_title(:show), do: "Show Response"

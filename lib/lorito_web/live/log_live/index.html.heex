@@ -44,7 +44,7 @@
   </:col>
   <:col :let={{_id, log}} label="Workspace">
     <%= if log.workspace do %>
-      {Lorito.Workspaces.Workspace.get_displayable_name(log.workspace)}
+      {log.workspace.displayable_name}
     <% else %>
       -
     <% end %>

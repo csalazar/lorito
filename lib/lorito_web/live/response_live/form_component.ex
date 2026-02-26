@@ -53,7 +53,6 @@ defmodule LoritoWeb.ResponseLive.FormComponent do
           Headers
         </label>
         <.inputs_for :let={header_form} field={@form[:headers]}>
-          <input type="hidden" name="response[headers_sort][]" value={header_form.index} />
           <div class="flex flex-row space-x-4">
             <div class="w-1/4">
               <.input type="text" field={header_form[:name]} label="Name" class="w-3/12" />
@@ -65,22 +64,26 @@ defmodule LoritoWeb.ResponseLive.FormComponent do
               <label>
                 <input
                   type="checkbox"
-                  name="response[headers_drop][]"
+                  name={"#{@form.name}[_drop_headers][]"}
                   value={header_form.index}
                   class="hidden"
                 />
+
                 <.icon name="hero-x-mark" class="w-5 h-5" />
               </label>
             </div>
           </div>
         </.inputs_for>
 
-        <label class="block cursor-pointer">
-          <input type="checkbox" name="response[headers_sort][]" class="hidden" />
+        <label>
+          <input
+            type="checkbox"
+            name={"#{@form.name}[_add_headers]"}
+            value="end"
+            class="hidden"
+          />
           <.icon name="hero-plus-circle" class="w-5 h-5" /> add header
         </label>
-
-        <input type="hidden" name="response[headers_drop][]" />
 
         <label class="block text-sm font-semibold leading-6 text-zinc-800 dark:text-base-content">
           Body
@@ -94,7 +97,6 @@ defmodule LoritoWeb.ResponseLive.FormComponent do
         <div :if={Enum.count(@object.responses) > 0} id="placeholders_section">
           <label class="block text-sm font-semibold leading-6 text-zinc-800">Placeholders</label>
           <.inputs_for :let={placeholder_form} field={@form[:placeholders]}>
-            <input type="hidden" name="response[placeholders_sort][]" value={placeholder_form.index} />
             <div class="flex flex-row space-x-4">
               <div class="w-1/4">
                 <.input type="text" field={placeholder_form[:icon]} label="Icon" class="w-3/12" />
@@ -116,22 +118,26 @@ defmodule LoritoWeb.ResponseLive.FormComponent do
                 <label>
                   <input
                     type="checkbox"
-                    name="response[placeholders_drop][]"
+                    name={"#{@form.name}[_drop_placeholders][]"}
                     value={placeholder_form.index}
                     class="hidden"
                   />
+
                   <.icon name="hero-x-mark" class="w-5 h-5" />
                 </label>
               </div>
             </div>
           </.inputs_for>
 
-          <label class="block cursor-pointer">
-            <input type="checkbox" name="response[placeholders_sort][]" class="hidden" />
+          <label>
+            <input
+              type="checkbox"
+              name={"#{@form.name}[_add_placeholders]"}
+              value="end"
+              class="hidden"
+            />
             <.icon name="hero-plus-circle" class="w-5 h-5" /> add placeholder
           </label>
-
-          <input type="hidden" name="response[placeholders_drop][]" />
         </div>
 
         <:actions>
@@ -142,31 +148,65 @@ defmodule LoritoWeb.ResponseLive.FormComponent do
     """
   end
 
+  def get_form(%{template: template, current_user: current_user}) do
+    Responses.form_to_create_response_for_template(template.id, actor: current_user)
+  end
+
+  def get_form(%{workspace: workspace, current_user: current_user}) do
+    Responses.form_to_create_response_for_workspace(workspace.id, actor: current_user)
+  end
+
   @impl true
-  def update(%{response: response} = assigns, socket) do
-    changeset = Responses.change_response(response)
+  def update(%{action: action} = assigns, socket) when action in [:new, :new_response] do
+    form = get_form(assigns)
 
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_form(changeset)
-     |> assign(content_type_matches: [], body: response.body)}
+     |> assign(content_type_matches: [], body: "")
+     |> assign(form: to_form(form))}
   end
 
   @impl true
-  def handle_event("validate", %{"_target" => ["live_monaco_editor", ""]}, socket) do
-    # ignore change events from the editor field
-    {:noreply, socket}
+  def update(%{action: action, response: response} = assigns, socket)
+      when action in [:edit, :edit_response] do
+    form = Responses.form_to_update_response(response)
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(content_type_matches: [], body: response.body)
+     |> assign(form: to_form(form))}
   end
 
   @impl true
-  def handle_event("validate", %{"response" => response_params}, socket) do
-    changeset =
-      socket.assigns.response
-      |> Responses.change_response(response_params)
-      |> Map.put(:action, :validate)
+  def handle_event("validate", %{"form" => params}, socket) do
+    form = AshPhoenix.Form.validate(socket.assigns.form, params)
+    {:noreply, assign(socket, :form, form)}
+  end
 
-    {:noreply, assign_form(socket, changeset)}
+  def handle_event("save", %{"form" => form_data}, %{assigns: %{body: body}} = socket) do
+    form_data = Map.put(form_data, "body", body)
+
+    case AshPhoenix.Form.submit(socket.assigns.form, params: form_data) do
+      {:ok, response} ->
+        notify_parent({:saved, response})
+
+        socket =
+          socket
+          |> put_flash(:info, "Response saved successfully")
+          |> push_patch(to: socket.assigns.patch)
+
+        {:noreply, socket}
+
+      {:error, form} ->
+        socket =
+          socket
+          |> put_flash(:error, "Could not save response data")
+          |> assign(:form, form)
+
+        {:noreply, socket}
+    end
   end
 
   def handle_event("set_editor_value", %{"value" => value}, socket) do
@@ -174,59 +214,12 @@ defmodule LoritoWeb.ResponseLive.FormComponent do
   end
 
   def handle_event(
-        "save",
-        %{"response" => response_params},
-        %{assigns: %{body: body}} = socket
-      ) do
-    response_params = Map.put(response_params, "body", body)
-    save_response(socket, socket.assigns.action, response_params)
-  end
-
-  def handle_event(
         "suggest_content_type",
-        %{"response" => %{"content_type" => search}},
+        %{"form" => %{"content_type" => search}},
         socket
       ) do
     matches = Responses.suggest_content_type(search)
     {:noreply, assign(socket, content_type_matches: matches)}
-  end
-
-  defp save_response(socket, action, response_params) when action in [:edit, :edit_response] do
-    case Responses.update_response(socket.assigns.response, response_params) do
-      {:ok, response} ->
-        notify_parent({:saved, response})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Response updated successfully")
-         |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
-    end
-  end
-
-  defp save_response(socket, action, response_params)
-       when action in [:new, :new_response] do
-    workspace_or_template =
-      Map.get(socket.assigns, :workspace) || Map.get(socket.assigns, :template)
-
-    case Responses.create_response(response_params, workspace_or_template) do
-      {:ok, response} ->
-        notify_parent({:saved, response})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Response created successfully")
-         |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
-    end
-  end
-
-  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

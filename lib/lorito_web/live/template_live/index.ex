@@ -6,7 +6,7 @@ defmodule LoritoWeb.TemplateLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, stream(socket, :templates, Templates.list_templates())}
+    {:ok, stream(socket, :templates, Templates.list_templates!())}
   end
 
   @impl true
@@ -17,7 +17,7 @@ defmodule LoritoWeb.TemplateLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     socket
     |> assign(:page_title, "Edit Template")
-    |> assign(:template, Templates.get_template!(id))
+    |> assign(:template, Templates.get_template_by_id!(id))
   end
 
   defp apply_action(socket, :new, _params) do
@@ -39,8 +39,8 @@ defmodule LoritoWeb.TemplateLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    template = Templates.get_template!(id)
-    {:ok, _} = Templates.delete_template(template)
+    template = Templates.get_template_by_id!(id)
+    :ok = Templates.delete_template!(template)
 
     {:noreply, stream_delete(socket, :templates, template)}
   end

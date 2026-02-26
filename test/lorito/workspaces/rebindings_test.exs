@@ -1,124 +1,117 @@
 defmodule Lorito.WorkspacesRebindingsTest do
   use Lorito.DataCase
+  import Lorito.Test.Generators
 
   alias Lorito.Workspaces
   alias Lorito.Responses
-  import Lorito.WorkspacesFixtures
-  import Lorito.ResponsesFixtures
-  import Lorito.AccountsFixtures
-
-  setup do
-    owner = user_fixture()
-
-    Lorito.Repo.put_user(owner)
-
-    {:ok, owner: owner}
-  end
 
   describe "promote_response_to_rebinding/2" do
     test "add new rebinding" do
-      workspace = workspace_fixture()
-      _response_1 = response_fixture(%{"route" => "x"}, workspace: workspace)
-      response_2 = response_fixture(%{"route" => "x"}, workspace: workspace)
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
 
-      workspace = Workspaces.get_workspace!(workspace.id)
+      generate(response(workspace: workspace, actor: user, route: "x"))
+      response = generate(response(workspace: workspace, actor: user, route: "x"))
+
+      workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: project.id})
       assert Enum.count(workspace.rebindings) == 0
 
-      {:ok, _} = Workspaces.promote_response_to_rebinding(workspace, response_2)
+      {:ok, _} = Workspaces.promote_response_to_rebinding(workspace, response)
 
-      workspace = Workspaces.get_workspace!(workspace.id)
+      workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: project.id})
       assert Enum.count(workspace.rebindings) == 1
     end
 
     test "add response to existing rebinding" do
-      workspace = workspace_fixture()
-      response_1 = response_fixture(%{"route" => "x"}, workspace: workspace)
-      response_2 = response_fixture(%{"route" => "x"}, workspace: workspace)
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      response1 = generate(response(workspace: workspace, actor: user, route: "x"))
+      response2 = generate(response(workspace: workspace, actor: user, route: "x"))
 
       {:ok, _} =
-        Workspaces.update_workspace(workspace, %{
-          "rebindings" => [
-            %{
-              "route" => "x",
-              "responses" => [response_1.id, response_2.id],
-              "activations" => [1, 0],
-              "strategy" => "manual",
-              "icon" => nil
-            }
-          ]
-        })
+        Workspaces.update_rebindings(workspace, [
+          %{
+            "route" => "x",
+            "responses" => [response1.id, response2.id],
+            "activations" => [1, 0],
+            "strategy" => "manual",
+            "icon" => "🐙"
+          }
+        ])
 
-      # create the new response
-      response_3 = response_fixture(%{"route" => "x"}, workspace: workspace)
+      response3 = generate(response(workspace: workspace, actor: user, route: "x"))
 
       # load workspace with rebinding and responses
-      workspace = Workspaces.get_workspace!(workspace.id)
-      {:ok, _} = Workspaces.promote_response_to_rebinding(workspace, response_3)
+      workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: project.id})
 
-      workspace = Workspaces.get_workspace!(workspace.id)
+      {:ok, _} = Workspaces.promote_response_to_rebinding(workspace, response3)
+
+      workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: project.id})
 
       assert workspace.rebindings |> List.first() |> Map.get(:responses) == [
-               response_1.id,
-               response_2.id,
-               response_3.id
+               response1.id,
+               response2.id,
+               response3.id
              ]
     end
   end
 
   describe "demote_response_from_rebindings/2" do
     test "delete rebinding" do
-      workspace = workspace_fixture()
-      response_1 = response_fixture(%{"route" => "x"}, workspace: workspace)
-      response_2 = response_fixture(%{"route" => "x"}, workspace: workspace)
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      response1 = generate(response(workspace: workspace, actor: user, route: "x"))
+      response2 = generate(response(workspace: workspace, actor: user, route: "x"))
 
       {:ok, _} =
-        Workspaces.update_workspace(workspace, %{
-          "rebindings" => [
-            %{
-              "route" => "x",
-              "responses" => [response_1.id, response_2.id],
-              "activations" => [1, 0],
-              "strategy" => "manual",
-              "icon" => nil
-            }
-          ]
-        })
+        Workspaces.update_rebindings(workspace, [
+          %{
+            "route" => "x",
+            "responses" => [response1.id, response2.id],
+            "activations" => [1, 0],
+            "strategy" => "manual",
+            "icon" => "🐙"
+          }
+        ])
 
-      {:ok, _} = Responses.delete_response(response_2)
-      {:ok, _} = Workspaces.demote_response_from_rebindings(workspace, response_2)
+      :ok = Responses.delete_response(response2)
+      {:ok, _} = Workspaces.demote_response_from_rebindings(workspace, response2)
 
-      workspace = Workspaces.get_workspace!(workspace.id)
+      workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: project.id})
       assert Enum.count(workspace.rebindings) == 0
     end
 
     test "delete response from rebinding" do
-      workspace = workspace_fixture()
-      response_1 = response_fixture(%{"route" => "x"}, workspace: workspace)
-      response_2 = response_fixture(%{"route" => "x"}, workspace: workspace)
-      response_3 = response_fixture(%{"route" => "x"}, workspace: workspace)
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      response1 = generate(response(workspace: workspace, actor: user, route: "x"))
+      response2 = generate(response(workspace: workspace, actor: user, route: "x"))
+      response3 = generate(response(workspace: workspace, actor: user, route: "x"))
 
       {:ok, _} =
-        Workspaces.update_workspace(workspace, %{
-          "rebindings" => [
-            %{
-              "route" => "x",
-              "responses" => [response_1.id, response_2.id, response_3.id],
-              "activations" => [1, 0, 0],
-              "strategy" => "manual",
-              "icon" => nil
-            }
-          ]
-        })
+        Workspaces.update_rebindings(workspace, [
+          %{
+            "route" => "x",
+            "responses" => [response1.id, response2.id, response3.id],
+            "activations" => [1, 0, 0],
+            "strategy" => "manual",
+            "icon" => "🐙"
+          }
+        ])
 
-      {:ok, _} = Responses.delete_response(response_2)
-      {:ok, _} = Workspaces.demote_response_from_rebindings(workspace, response_2)
+      :ok = Responses.delete_response(response2)
+      {:ok, _} = Workspaces.demote_response_from_rebindings(workspace, response2)
 
-      workspace = Workspaces.get_workspace!(workspace.id)
+      workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: project.id})
       assert Enum.count(workspace.rebindings) == 1
 
       assert workspace.rebindings |> List.first() |> Map.get(:responses) == [
-               response_1.id,
-               response_3.id
+               response1.id,
+               response3.id
              ]
     end
   end

@@ -40,13 +40,15 @@ defmodule LoritoWeb.TemplateLive.FormComponent do
                 <li>
                   <code>http_protocol</code>: convert from <code>https</code> to <code>http</code>
                 </li>
+                <li>
+                  <code>no_protocol</code>: remove protocol
+                </li>
               </ul>
             </p>
           </div>
         </div>
 
         <.inputs_for :let={copy_payload_form} field={@form[:copy_payloads]}>
-          <input type="hidden" name="template[copy_payloads_sort][]" value={copy_payload_form.index} />
           <div class="flex flex-row space-x-4">
             <div class="w-1/4">
               <.input type="text" field={copy_payload_form[:name]} label="Name" class="w-3/12" />
@@ -54,26 +56,29 @@ defmodule LoritoWeb.TemplateLive.FormComponent do
             <div class="w-full">
               <.input type="text" field={copy_payload_form[:value]} label="Value" />
             </div>
-            <div class="w-1/12">
-              <label>
-                <input
-                  type="checkbox"
-                  name="template[copy_payloads_drop][]"
-                  value={copy_payload_form.index}
-                  class="hidden"
-                />
-                <.icon name="hero-x-mark" class="w-5 h-5" />
-              </label>
-            </div>
+            <label>
+              <input
+                type="checkbox"
+                name={"#{@form.name}[_drop_copy_payloads][]"}
+                value={copy_payload_form.index}
+                class="hidden"
+              />
+
+              <.icon name="hero-x-mark" />
+            </label>
           </div>
         </.inputs_for>
 
-        <label class="block cursor-pointer">
-          <input type="checkbox" name="template[copy_payloads_sort][]" class="hidden" />
-          <.icon name="hero-plus-circle" class="w-5 h-5" /> add copy payload
+        <label>
+          <input
+            type="checkbox"
+            name={"#{@form.name}[_add_copy_payloads]"}
+            value="end"
+            class="hidden"
+          />
+          <.icon name="hero-plus" />
         </label>
 
-        <input type="hidden" name="template[copy_payloads_drop][]" />
         <:actions>
           <.button class="btn-primary" phx-disable-with="Saving...">Save Template</.button>
         </:actions>
@@ -83,61 +88,51 @@ defmodule LoritoWeb.TemplateLive.FormComponent do
   end
 
   @impl true
-  def update(%{template: template} = assigns, socket) do
-    changeset = Templates.change_template(template)
+  def update(%{action: :new, current_user: current_user} = assigns, socket) do
+    form = Templates.form_to_create_template(actor: current_user)
 
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_form(changeset)}
+     |> assign(form: to_form(form))}
   end
 
   @impl true
-  def handle_event("validate", %{"template" => template_params}, socket) do
-    changeset =
-      socket.assigns.template
-      |> Templates.change_template(template_params)
-      |> Map.put(:action, :validate)
+  def update(%{action: :edit, template: template} = assigns, socket) do
+    form = Templates.form_to_update_template(template)
 
-    {:noreply, assign_form(socket, changeset)}
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(form: to_form(form))}
   end
 
-  def handle_event("save", %{"template" => template_params}, socket) do
-    save_template(socket, socket.assigns.action, template_params)
+  @impl true
+  def handle_event("validate", %{"form" => params}, socket) do
+    form = AshPhoenix.Form.validate(socket.assigns.form, params)
+    {:noreply, assign(socket, :form, form)}
   end
 
-  defp save_template(socket, :edit, template_params) do
-    case Templates.update_template(socket.assigns.template, template_params) do
+  def handle_event("save", %{"form" => form_data}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.form, params: form_data) do
       {:ok, template} ->
         notify_parent({:saved, template})
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Template updated successfully")
-         |> push_patch(to: socket.assigns.patch)}
+        socket =
+          socket
+          |> put_flash(:info, "Template saved successfully")
+          |> push_patch(to: socket.assigns.patch)
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply, socket}
+
+      {:error, form} ->
+        socket =
+          socket
+          |> put_flash(:error, "Could not save template data")
+          |> assign(:form, form)
+
+        {:noreply, socket}
     end
-  end
-
-  defp save_template(socket, :new, template_params) do
-    case Templates.create_template(template_params) do
-      {:ok, template} ->
-        notify_parent({:saved, template})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Template created successfully")
-         |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
-    end
-  end
-
-  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

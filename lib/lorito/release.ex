@@ -29,7 +29,9 @@ defmodule Lorito.Release do
   def add_user(email) do
     load_app()
 
-    {:ok, password} = Lorito.Accounts.add_user_from_cli(email)
+    password = :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false) |> String.trim()
+    Lorito.Accounts.register_user(%{email: email, password: password}, authorize?: false)
+
     IO.puts("User #{email} added with password: #{password}")
   end
 end

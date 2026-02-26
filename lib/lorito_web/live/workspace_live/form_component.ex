@@ -38,63 +38,41 @@ defmodule LoritoWeb.WorkspaceLive.FormComponent do
   end
 
   @impl true
-  def update(%{workspace: workspace} = assigns, socket) do
-    changeset = Workspaces.change_workspace(workspace)
+  def update(%{action: :edit, workspace: workspace} = assigns, socket) do
+    form = Workspaces.form_to_update_workspace(workspace)
 
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_form(changeset)}
+     |> assign(form: to_form(form))}
   end
 
   @impl true
-  def handle_event("validate", %{"workspace" => workspace_params}, socket) do
-    changeset =
-      socket.assigns.workspace
-      |> Workspaces.change_workspace(workspace_params)
-      |> Map.put(:action, :validate)
-
-    {:noreply, assign_form(socket, changeset)}
+  def handle_event("validate", %{"form" => params}, socket) do
+    form = AshPhoenix.Form.validate(socket.assigns.form, params)
+    {:noreply, assign(socket, :form, form)}
   end
 
-  def handle_event("save", %{"workspace" => workspace_params}, socket) do
-    save_workspace(socket, socket.assigns.action, workspace_params)
-  end
-
-  defp save_workspace(%{assigns: %{project: project}} = socket, :new, workspace_params) do
-    workspace_params = Map.put(workspace_params, "project", project)
-
-    case Workspaces.create_workspace(workspace_params) do
+  def handle_event("save", %{"form" => form_data}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.form, params: form_data) do
       {:ok, workspace} ->
         notify_parent({:saved, workspace})
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Workspace created successfully")
-         |> push_patch(to: socket.assigns.patch)}
+        socket =
+          socket
+          |> put_flash(:info, "Workspace saved successfully")
+          |> push_patch(to: socket.assigns.patch)
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply, socket}
+
+      {:error, form} ->
+        socket =
+          socket
+          |> put_flash(:error, "Could not save workspace data")
+          |> assign(:form, form)
+
+        {:noreply, socket}
     end
-  end
-
-  defp save_workspace(%{assigns: %{workspace: workspace}} = socket, :edit, workspace_params) do
-    case Workspaces.update_workspace(workspace, workspace_params) do
-      {:ok, workspace} ->
-        notify_parent({:saved, workspace})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Workspace updated successfully")
-         |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
-    end
-  end
-
-  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

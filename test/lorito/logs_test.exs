@@ -1,89 +1,93 @@
 defmodule Lorito.LogsTest do
   use Lorito.DataCase
+  import Mock
 
-  alias Lorito.Logs
-  import Lorito.AccountsFixtures
-
-  setup do
-    owner = user_fixture()
-
-    Lorito.Repo.put_user(owner)
-
-    {:ok, owner: owner}
-  end
+  import Lorito.Test.Generators
 
   describe "logs" do
-    alias Lorito.Logs.Log
+    test "list scoped logs" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
 
-    import Lorito.LogsFixtures
+      log1 = generate(log(project_id: project.id))
+      log2 = generate(log(project_id: project.id, workspace_id: workspace.id))
+      generate(log())
 
-    @invalid_attrs %{ip: nil, body: nil, url: nil, headers: [], method: nil}
+      logs = Lorito.Logs.list_logs!(%{scoped_logs: true})
+      assert Enum.map(logs, & &1.id) == [log2.id, log1.id]
 
-    test "list_logs/0 returns all logs" do
-      log = log_fixture() |> Repo.preload([:project, :workspace])
-      assert Logs.list_logs() == [log]
+      logs = Lorito.Logs.list_logs!(%{scoped_logs: false})
+      assert Enum.count(logs) == 3
     end
 
-    test "get_log!/1 returns the log with given id" do
-      log = log_fixture() |> Repo.preload([:project, :workspace])
-      assert Logs.get_log!(log.id) == log
+    test "send notification for project if notifiable is true" do
+      user = generate(user())
+      generate(integration(actor: user))
+      project = generate(project(notifiable: true, actor: user))
+
+      with_mock Lorito.Logs, [:passthrough], send_integration_notification: fn _i, _l -> :ok end do
+        generate(log(project_id: project.id))
+        assert_called(Lorito.Logs.send_integration_notification(:_, :_))
+      end
     end
 
-    test "create_log/1 with valid data creates a log" do
-      valid_attrs = %{
-        ip: "some ip",
-        body: "some body",
-        url: "some url",
-        headers: [["x-header", "value"]],
-        method: "GET"
-      }
+    test "don't send notification for project if notifiable is false" do
+      user = generate(user())
+      generate(integration(actor: user))
+      project = generate(project(notifiable: false, actor: user))
 
-      assert {:ok, %Log{} = log} = Logs.create_log(valid_attrs)
-      assert log.ip == "some ip"
-      assert log.body == "some body"
-      assert log.url == "some url"
-      assert log.headers == [["x-header", "value"]]
-      assert log.method == "GET"
+      with_mock Lorito.Logs, [:passthrough], send_integration_notification: fn _i, _l -> :ok end do
+        generate(log(project_id: project.id))
+        assert_not_called(Lorito.Logs.send_integration_notification(:_, :_))
+      end
     end
 
-    test "create_log/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Logs.create_log(@invalid_attrs)
+    test "send notification for workspace if notifiable is true" do
+      user = generate(user())
+      generate(integration(actor: user))
+      project = generate(project(notifiable: false, actor: user))
+      workspace = generate(workspace(project: project, notifiable: true, actor: user))
+
+      with_mock Lorito.Logs, [:passthrough], send_integration_notification: fn _i, _l -> :ok end do
+        generate(log(project_id: project.id, workspace_id: workspace.id))
+        assert_called(Lorito.Logs.send_integration_notification(:_, :_))
+      end
     end
 
-    test "update_log/2 with valid data updates the log" do
-      log = log_fixture()
+    test "don't send notification for workspace if notifiable is false" do
+      user = generate(user())
+      generate(integration(actor: user))
+      project = generate(project(notifiable: false, actor: user))
+      workspace = generate(workspace(project: project, notifiable: false, actor: user))
 
-      update_attrs = %{
-        ip: "some updated ip",
-        body: "some updated body",
-        url: "some updated url",
-        headers: [["x-header", "value"]],
-        method: "GET"
-      }
-
-      assert {:ok, %Log{} = log} = Logs.update_log(log, update_attrs)
-      assert log.ip == "some updated ip"
-      assert log.body == "some updated body"
-      assert log.url == "some updated url"
-      assert log.headers == [["x-header", "value"]]
-      assert log.method == "GET"
+      with_mock Lorito.Logs, [:passthrough], send_integration_notification: fn _i, _l -> :ok end do
+        generate(log(project_id: project.id, workspace_id: workspace.id))
+        assert_not_called(Lorito.Logs.send_integration_notification(:_, :_))
+      end
     end
 
-    test "update_log/2 with invalid data returns error changeset" do
-      log = log_fixture() |> Repo.preload([:project, :workspace])
-      assert {:error, %Ecto.Changeset{}} = Logs.update_log(log, @invalid_attrs)
-      assert log == Logs.get_log!(log.id)
+    test "delete logs by ip" do
+      log1 = generate(log(ip: "127.0.0.1"))
+      log2 = generate(log(ip: "127.0.0.1"))
+      _log3 = generate(log(ip: "192.168.0.1"))
+
+      {_n, deleted_logs} = Lorito.Logs.delete_logs_by_ip("127.0.0.1")
+      assert Enum.map(deleted_logs, & &1.id) == [log1.id, log2.id]
     end
 
-    test "delete_log/1 deletes the log" do
-      log = log_fixture()
-      assert {:ok, %Log{}} = Logs.delete_log(log)
-      assert_raise Ecto.NoResultsError, fn -> Logs.get_log!(log.id) end
-    end
+    test "delete catch-all logs" do
+      user = generate(user())
+      project = generate(project(notifiable: false, actor: user))
+      workspace = generate(workspace(project: project, actor: user))
 
-    test "change_log/1 returns a log changeset" do
-      log = log_fixture()
-      assert %Ecto.Changeset{} = Logs.change_log(log)
+      log1 = generate(log(ip: "127.0.0.1"))
+      log2 = generate(log(ip: "127.0.0.1"))
+      _log3 = generate(log(ip: "127.0.0.1", project_id: project.id))
+      _log4 = generate(log(ip: "127.0.0.1", project_id: project.id, workspace_id: workspace.id))
+
+      {_n, deleted_logs} = Lorito.Logs.delete_logs_by_type(:catch_all)
+      assert Enum.map(deleted_logs, & &1.id) == [log1.id, log2.id]
     end
   end
 end

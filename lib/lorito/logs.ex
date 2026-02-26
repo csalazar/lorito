@@ -1,39 +1,33 @@
 defmodule Lorito.Logs do
-  alias Lorito.Logs.Log
-  alias Lorito.Logs.PubSub, as: LogsPubSub
-  alias Lorito.Logs.LogsRepo
   alias Lorito.Utils.RequestParser
 
-  defdelegate list_logs(filters \\ %{}), to: LogsRepo
-  defdelegate get_log!(id), to: LogsRepo
-  defdelegate update_log(log, attrs \\ %{}), to: LogsRepo
-  defdelegate delete_log(log), to: LogsRepo
-  defdelegate delete_logs(criteria), to: LogsRepo
-  defdelegate change_log(log, attrs \\ %{}), to: LogsRepo
+  use Ash.Domain,
+    otp_app: :lorito,
+    extensions: [AshPhoenix]
 
-  @doc """
-  Do nothing if it's a catch-all log.
-  Send integration notification if the project or workspace has notifications enabled.
-  """
-  def dispatch_notifications({:error, %Ecto.Changeset{}} = error), do: error
-
-  def dispatch_notifications({:ok, %Log{project_id: nil, workspace_id: nil} = log}),
-    do: {:ok, log}
-
-  def dispatch_notifications({:ok, %Log{} = log}) do
-    log = LogsRepo.get_log!(log.id)
-
-    if log.project.notifiable or log.workspace.notifiable do
-      Lorito.Integrations.dispatch_notifications(log)
+  resources do
+    resource Lorito.Logs.Log do
+      define :list_logs, action: :list_logs
+      define :get_log_by_id, action: :read, get_by: [:id]
+      define :create_log, action: :create
+      define :delete_log, action: :destroy
+      define :delete_logs_by_ip, action: :delete_logs_by_ip, args: [:ip]
+      define :delete_logs_by_type, action: :delete_logs_by_type, args: [:type]
     end
 
-    {:ok, log}
-  end
+    resource Lorito.Logs.Integration do
+      define :list_integrations, action: :read
+      define :get_integration_by_id, action: :read, get_by: [:id]
+      define :create_integration, action: :create
+      define :update_integration, action: :update
+      define :delete_integration, action: :destroy
 
-  def create_log(attrs \\ %{}) do
-    LogsRepo.create_log(attrs)
-    |> LogsPubSub.notify_subscribers([:log, :created])
-    |> dispatch_notifications()
+      define :send_integration_probe, action: :send_probe, args: [:integration]
+
+      define :send_integration_notification,
+        action: :send_notification,
+        args: [:integration, :log]
+    end
   end
 
   def gather_log_attributes(conn) do

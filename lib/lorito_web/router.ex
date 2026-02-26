@@ -1,39 +1,14 @@
-import LoritoWeb.UserAuth
-
-defmodule Lorito.InitAssigns do
-  use Phoenix.Component
-
-  alias Lorito.{Projects, Workspaces}
-
-  def on_mount(:project, params, _session, socket) do
-    project =
-      case Map.get(params, "project_id") do
-        nil ->
-          nil
-
-        id ->
-          Projects.get_project!(id)
-      end
-
-    workspace =
-      case Map.get(params, "workspace_id") do
-        nil ->
-          nil
-
-        id ->
-          Workspaces.get_workspace!(id)
-      end
-
-    socket =
-      socket
-      |> assign(project: project, workspace: workspace)
-
-    {:cont, socket}
-  end
-end
-
 defmodule LoritoWeb.Router do
   use LoritoWeb, :router
+
+  use AshAuthentication.Phoenix.Router
+
+  import AshAuthentication.Plug.Helpers
+
+  pipeline :api do
+    plug :load_from_bearer
+    plug :set_actor, :user
+  end
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -42,7 +17,7 @@ defmodule LoritoWeb.Router do
     plug :put_root_layout, html: {LoritoWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug :fetch_current_user
+    plug :load_from_session
   end
 
   pipeline :public do
@@ -50,10 +25,21 @@ defmodule LoritoWeb.Router do
   end
 
   scope "/_lorito", LoritoWeb do
+    pipe_through [:browser]
+    auth_routes AuthController, Lorito.Accounts.User, path: "/auth"
+    sign_out_route AuthController
+
+    # Remove these if you'd like to use your own authentication views
+    sign_in_route auth_routes_prefix: "/auth",
+                  on_mount: [{LoritoWeb.LiveUserAuth, :live_no_user}],
+                  overrides: [AshAuthentication.Phoenix.Overrides.DaisyUI]
+  end
+
+  scope "/_lorito", LoritoWeb do
     pipe_through :browser
 
-    live_session :default,
-      on_mount: [{LoritoWeb.UserAuth, :ensure_authenticated}, {Lorito.InitAssigns, :project}] do
+    ash_authentication_live_session :authentication_required,
+      on_mount: [{LoritoWeb.LiveUserAuth, :live_user_required}] do
       live "/", ProjectLive.Index, :index
       live "/projects", ProjectLive.Index, :index
       live "/projects/new", ProjectLive.Index, :new
@@ -70,14 +56,14 @@ defmodule LoritoWeb.Router do
 
       live "/templates", TemplateLive.Index, :index
       live "/templates/new", TemplateLive.Index, :new
-      live "/templates/:template_id/edit", TemplateLive.Index, :edit
+      live "/templates/:id/edit", TemplateLive.Index, :edit
 
-      live "/templates/:template_id", TemplateLive.Show, :show
-      live "/templates/:template_id/show/edit", TemplateLive.Show, :edit
+      live "/templates/:id", TemplateLive.Show, :show
+      live "/templates/:id/show/edit", TemplateLive.Show, :edit
 
-      live "/templates/:template_id/responses/new", TemplateLive.Show, :new_response
+      live "/templates/:id/responses/new", TemplateLive.Show, :new_response
 
-      live "/templates/:template_id/responses/:response_id/edit",
+      live "/templates/:id/responses/:response_id/edit",
            TemplateLive.Show,
            :edit_response
 
@@ -107,23 +93,6 @@ defmodule LoritoWeb.Router do
         live "/workspaces/:workspace_id/logs/:id", LogLive.Show, :workspace_log_show
       end
     end
-  end
-
-  scope "/_lorito", LoritoWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
-
-    live_session :redirect_if_user_is_authenticated,
-      on_mount: [{LoritoWeb.UserAuth, :redirect_if_user_is_authenticated}] do
-      live "/users/log_in", UserLoginLive, :new
-    end
-
-    post "/users/log_in", UserSessionController, :create
-  end
-
-  scope "/_lorito", LoritoWeb do
-    pipe_through [:browser]
-
-    delete "/users/log_out", UserSessionController, :delete
   end
 
   scope "/", LoritoWeb do

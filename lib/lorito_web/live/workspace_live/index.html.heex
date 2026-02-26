@@ -48,7 +48,7 @@
   <:col :let={{_id, workspace}} label="Name">
     <div class="flex space-x-4">
       <div>
-        {Lorito.Workspaces.Workspace.get_displayable_name(workspace)}
+        {workspace.displayable_name}
       </div>
       <div :if={workspace.template} class="badge badge-secondary">
         {workspace.template.name}
@@ -90,6 +90,7 @@
     action={@live_action}
     workspace={@workspace}
     project={@project}
+    current_user={@current_user}
     patch={~p"/_lorito/projects/#{@project}/workspaces"}
   />
 </.modal>
