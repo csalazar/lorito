@@ -105,6 +105,11 @@ Once everything is setup and changes are propagated,
 you can test with `dig A abc.subdomain.domain.tld`
 and the DNS requests should appear on the main logs.
 
+## SSL certificate
+
+The SSL certificate should be emitted for `*.subdomain.domain.tld`
+to respond successfully to HTTPS requests.
+
 ## fly.io
 
 My suggestion is to go with [fly.io](https://fly.io).
