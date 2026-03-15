@@ -15,7 +15,8 @@ defmodule Lorito.Application do
       # Start the Endpoint (http/https)
       LoritoWeb.Endpoint,
       LoritoWeb.RateLimit,
-      {AshAuthentication.Supervisor, [otp_app: :lorito]}
+      {AshAuthentication.Supervisor, [otp_app: :lorito]},
+      Lorito.DnsServer
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

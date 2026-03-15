@@ -14,14 +14,14 @@ defmodule RequestLogger do
     |> Logs.gather_log_attributes()
     |> Map.put(:workspace_id, workspace.id)
     |> Map.put(:project_id, workspace.project_id)
-    |> Logs.create_log()
+    |> Logs.create_http_log()
   end
 
   def log(conn, %Project{} = project) do
     conn
     |> Logs.gather_log_attributes()
     |> Map.put(:project_id, project.id)
-    |> Logs.create_log()
+    |> Logs.create_http_log()
   end
 
   def log(conn) do
@@ -30,7 +30,7 @@ defmodule RequestLogger do
       |> Logs.gather_log_attributes()
 
     if not RequestParser.is_internal_request(attributes) do
-      {:ok, _} = Logs.create_log(attributes)
+      {:ok, _} = Logs.create_http_log(attributes)
     end
   end
 end
@@ -193,7 +193,7 @@ defmodule LoritoWeb.PublicController do
   end
 
   def forward_request({:ok, :catch_all}, conn) do
-    with subdomain when not is_nil(subdomain) <- LoritoWeb.Utils.get_subdomain(conn),
+    with subdomain when not is_nil(subdomain) <- LoritoWeb.Utils.get_subdomain(conn.host),
          {:ok, project} <- Projects.get_project_by_subdomain(subdomain) do
       RequestLogger.log(conn, project)
     else

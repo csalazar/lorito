@@ -3,9 +3,7 @@ alias Lorito.Projects.Project
 alias Lorito.Responses.Response
 
 defmodule LoritoWeb.Utils do
-  def get_subdomain(conn) do
-    request_host = conn.host
-
+  def get_subdomain(request_host) do
     server_host =
       LoritoWeb.Endpoint.url()
       |> URI.parse()
@@ -55,6 +53,15 @@ defmodule LoritoWeb.Utils do
       "%b %d, %Y at %H:%M:%S",
       :strftime
     )
+  end
+
+  def is_in_scope?(fqdn) do
+    server_host =
+      LoritoWeb.Endpoint.url()
+      |> URI.parse()
+      |> Map.get(:host)
+
+    String.ends_with?(fqdn, server_host)
   end
 end
 

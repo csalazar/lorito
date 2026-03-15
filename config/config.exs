@@ -58,7 +58,8 @@ config :lorito,
     Lorito.Responses,
     Lorito.Templates,
     Lorito.Projects,
-    Lorito.Accounts
+    Lorito.Accounts,
+    Lorito.Settings
   ]
 
 config :nanoid,

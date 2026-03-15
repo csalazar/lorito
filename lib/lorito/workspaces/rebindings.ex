@@ -118,9 +118,13 @@ defmodule Lorito.Workspaces.Rebindings do
   end
 
   def get_rebinding(%Workspace{} = workspace, route) do
-    case Enum.find(workspace.rebindings, fn r -> r.route == route end) do
-      nil -> {:not_found, nil}
-      rebinding -> {:ok, rebinding}
+    if workspace.rebindings == nil do
+      {:not_found, nil}
+    else
+      case Enum.find(workspace.rebindings, fn r -> r.route == route end) do
+        nil -> {:not_found, nil}
+        rebinding -> {:ok, rebinding}
+      end
     end
   end
 

@@ -70,3 +70,5 @@ if config_env() == :prod do
 
   config :lorito, token_signing_secret: secret_key_base
 end
+
+config :lorito, :environment, config_env()

@@ -43,8 +43,7 @@ defmodule Lorito.Logs.Integration do
 
       argument :log,
         type: :struct,
-        allow_nil?: false,
-        constraints: [instance_of: Lorito.Logs.Log]
+        allow_nil?: false
 
       run fn input, _ ->
         integration = input.arguments.integration

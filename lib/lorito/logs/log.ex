@@ -9,17 +9,14 @@ defmodule Lorito.Logs.Log do
     primary_read_warning?: false
 
   postgres do
-    table "logs"
+    table "all_logs"
     repo Lorito.Repo
   end
 
   actions do
-    defaults [:destroy]
-    default_accept [:ip, :method, :url, :headers, :body, :params, :workspace_id, :project_id]
-
     read :read do
       primary? true
-      prepare build(load: [:project, :workspace, :host])
+      prepare build(load: [:project, :workspace, :implementation])
     end
 
     read :list_logs do
@@ -34,112 +31,92 @@ defmodule Lorito.Logs.Log do
              )
 
       prepare build(
-                load: [:project, :workspace, :host],
+                load: [:project, :workspace, :implementation],
                 limit: 100,
                 sort: [inserted_at: :desc]
               )
     end
 
-    create :create do
-      primary? true
-
-      change after_action(fn changeset, record, _ctx ->
-               log =
-                 record
-                 |> Ash.load!([:project, :workspace])
-
-               if __MODULE__.is_notifiable?(log) do
-                 Lorito.Logs.list_integrations!()
-                 |> Enum.each(fn integration ->
-                   Lorito.Logs.send_integration_notification(integration, log)
-                 end)
-               end
-
-               {:ok, record}
-             end)
-    end
-
-    action :delete_logs_by_ip, :term do
-      argument :ip, :string, allow_nil?: false
+    action :delete_log do
+      argument :log, :struct, allow_nil?: false
 
       run fn input, _context ->
-        __MODULE__
-        |> Ash.Query.for_read(:read)
-        |> Ash.Query.filter(ip == ^input.arguments.ip)
-        |> bulk_destroy()
+        log = input.arguments.log
+
+        Lorito.Logs.Helpers.log_protocol_to_module(log.protocol)
+        |> Ash.Query.filter(id == ^log.id)
+        |> Ash.read_one!()
+        |> Ash.destroy!()
+
+        :ok
       end
     end
 
-    action :delete_logs_by_type, :term do
-      argument :type, :string, allow_nil?: false
+    action :delete_logs_by_ip do
+      argument :ip, :string, allow_nil?: false
+
+      run fn input, _context ->
+        [Lorito.Logs.HTTP, Lorito.Logs.DNS]
+        |> Enum.each(fn resource ->
+          {:ok, _} =
+            resource
+            |> Ash.Query.for_read(:read)
+            |> Ash.Query.filter(ip == ^input.arguments.ip)
+            |> Lorito.Logs.Helpers.bulk_destroy()
+        end)
+
+        :ok
+      end
+    end
+
+    action :delete_logs_by_type do
+      argument :type, :atom, allow_nil?: false
 
       run fn input, _context ->
         type = input.arguments.type
 
-        query =
-          __MODULE__
-          |> Ash.Query.for_read(:read)
-          |> Ash.Query.filter(is_nil(project_id))
-          |> bulk_destroy()
+        case type do
+          :catch_all ->
+            [Lorito.Logs.HTTP, Lorito.Logs.DNS]
+            |> Enum.each(fn resource ->
+              {:ok, _} =
+                resource
+                |> Ash.Query.for_read(:read)
+                |> Ash.Query.filter(is_nil(project_id))
+                |> Lorito.Logs.Helpers.bulk_destroy()
+            end)
+
+            :ok
+        end
       end
     end
   end
 
-  pub_sub do
-    module LoritoWeb.Endpoint
-
-    prefix "log"
-    publish :create, ["created"]
-    publish :create, [[:workspace_id], "created"]
-  end
-
   attributes do
     uuid_primary_key :id
-    attribute :ip, :string, allow_nil?: false
-    attribute :method, :string, allow_nil?: false
-    attribute :url, :string, allow_nil?: false
-    attribute :headers, {:array, {:array, :string}}, default: []
-    attribute :body, :string, default: ""
-    attribute :params, :map, default: %{}
+    attribute :protocol, :atom, constraints: [one_of: [:http, :dns]]
 
     timestamps()
   end
 
   relationships do
-    belongs_to :workspace, Lorito.Workspaces.Workspace, attribute_type: :string
-    belongs_to :project, Lorito.Projects.Project, attribute_type: :string
+    belongs_to :workspace, Lorito.Workspaces.Workspace, attribute_type: :string, allow_nil?: true
+    belongs_to :project, Lorito.Projects.Project, attribute_type: :string, allow_nil?: true
+
+    has_one :http_details, Lorito.Logs.HTTP do
+      source_attribute :id
+      destination_attribute :id
+    end
+
+    has_one :dns_details, Lorito.Logs.DNS do
+      source_attribute :id
+      destination_attribute :id
+    end
   end
 
   calculations do
-    calculate :host, :string do
-      calculation fn records, _context ->
-        Enum.map(records, fn record ->
-          record.headers
-          |> Enum.find(fn [header, _value] -> header == "host" end)
-          |> case do
-            [_, host] ->
-              host
-
-            nil ->
-              ""
-          end
-        end)
-      end
+    calculate :implementation, __MODULE__.LogImplementation, __MODULE__.GetLogImplementation do
+      allow_nil? false
     end
-  end
-
-  def bulk_destroy(query) do
-    case Ash.bulk_destroy(query, :destroy, %{}, return_records?: true) do
-      %Ash.BulkResult{status: :success, records: records} ->
-        {:ok, records}
-
-      %Ash.BulkResult{status: :error, errors: reason} ->
-        {:error, reason}
-    end
-  end
-
-  def is_notifiable?(log) do
-    (log.project && log.project.notifiable) ||
-      (log.workspace && log.workspace.notifiable)
   end
 end

@@ -43,3 +43,23 @@ it's time to create a user to log in.
 The output contains your user and password.
 Now you can log in at `https://domain.tld/_lorito`
 with this credentials.
+
+
+# Optional: DNS setup
+
+In fly.io, UDP services must be declared in your `fly.toml` file.
+Add the following snippet to expose lorito DNS server.
+
+```
+[[services]]
+  internal_port = 53
+  protocol = "udp"
+  [[services.ports]]
+    port = 53
+```
+
+fly.io requires [a static IP for UDP services](https://fly.io/docs/networking/udp-and-tcp/).
+Assign a static v4 and v6 IP to your fly.io machine
+to be able to configure lorito DNS server correctly.
+Then, please refer to the section "Enabling the DNS server"
+in the main README.

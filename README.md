@@ -10,13 +10,15 @@ Please read the [introduction blog post](https://csal.medium.com/introducing-lor
 
 lorito is a web app written in Elixir
 that uses a postgres database to store its information.
+It provides a HTTP server to receive and respond HTTP requests.
+Optionally, a DNS server can be configured to receive DNS requests.
 
 # Running lorito
 
 ## Development
 
 There's a [.devcontainer](https://containers.dev/) setup
-to run Lorito for development purposes,
+to run lorito for development purposes,
 which includes both an app container and a PostgreSQL container.
 
 If you load this repository in [VSCode](https://code.visualstudio.com/),
@@ -76,6 +78,32 @@ Then, follow the same instructions to add a user
 as outlined in the previous section.
 
 # Deployment
+
+Root domains help keep URLs shorter.
+However, they might receive a lot of automated requests.
+Additionally, new lorito DNS capability
+is complicated to set up at root level
+due to several reasons (presence of DNS manager, other DNS records, etc).
+
+Then, my suggestion is to use a subdomain to host lorito.
+
+## Enabling the DNS server
+
+lorito provides DNS capabilities to receive DNS requests.
+The DNS server can be enabled at `https://subdomain.domain.tld/_lorito/settings`.
+IP configuration is required to route the HTTP requests to your lorito instance.
+
+To be able to receive DNS requests at `subdomain.domain.tld`,
+you should add two DNS records in your DNS manager:
+
+| Type | Name       | Content                   |
+| ---- | ---------- | ------------------------- |
+| NS   | subdomain  | ns1.domain.tld            |
+| A    | ns1        | <subdomain.domain.tld IP> |
+
+Once everything is setup and changes are propagated,
+you can test with `dig A abc.subdomain.domain.tld`
+and the DNS requests should appear on the main logs.
 
 ## fly.io
 

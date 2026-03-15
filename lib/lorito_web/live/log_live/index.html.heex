@@ -32,43 +32,46 @@
     end
   }
 >
-  <:col :let={{_id, log}} label="Date">
+  <:col :let={{_id, log}} label="Date" class="w-64">
     {LoritoWeb.Utils.format_datetime(log.inserted_at, @current_user)}
   </:col>
-  <:col :let={{_id, log}} label="Project">
+
+  <:col :let={{_id, log}} label="Protocol" class="w-24">
+      {log.protocol |> to_string() |> String.upcase()}
+  </:col>
+  <:col :let={{_id, log}} label="Project" class="w-48">
     <%= if log.project do %>
       {log.project.name}
     <% else %>
       -
     <% end %>
   </:col>
-  <:col :let={{_id, log}} label="Workspace">
+  <:col :let={{_id, log}} label="Workspace" class="w-48">
     <%= if log.workspace do %>
       {log.workspace.displayable_name}
     <% else %>
       -
     <% end %>
   </:col>
-
-  <:col :let={{_id, log}} label="Method">{log.method}</:col>
-  <:col :let={{_id, log}} label="Host">{log.host}</:col>
-
-  <:col :let={{id, log}} label="IP">
-    {log.ip}
+  <:col :let={{_id, log}} label="Host">
+    <%= log.implementation.value.host %>
+  </:col>
+  <:col :let={{id, log}} label="Client IP">
+    {log.implementation.value.ip}
     <.link
-      phx-click={JS.push("ip_delete", value: %{ip: log.ip}) |> hide("##{id}")}
+      phx-click={JS.push("ip_delete", value: %{ip: log.implementation.value.ip}) |> hide("##{id}")}
       class="btn btn-primary btn-xs"
     >
       delete
     </.link>
   </:col>
-  <:col :let={{_id, log}} label="Url">{log.url}</:col>
   <:action :let={{id, log}}>
     <.link
-      phx-click={JS.push("delete", value: %{id: log.id}) |> hide("##{id}")}
+      phx-click={JS.push("delete", value: %{id: log.id, protocol: log.protocol}) |> hide("##{id}")}
       class="btn btn-ghost"
     >
       <.icon name="hero-trash" />
     </.link>
   </:action>
+
 </.table>

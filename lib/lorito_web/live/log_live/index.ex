@@ -51,26 +51,20 @@ defmodule LoritoWeb.LogLive.Index do
 
   @impl true
   def handle_event("delete_catch_all", _params, socket) do
-    {_n, deleted_logs} = Logs.delete_logs_by_type(:catch_all)
+    :ok = Logs.delete_logs_by_type(:catch_all)
 
-    new_socket =
-      Enum.reduce(deleted_logs, socket, fn log, acc_socket ->
-        stream_delete(acc_socket, :logs, log)
-      end)
-
-    {:noreply, new_socket}
+    {:noreply,
+     socket
+     |> stream(:logs, Logs.list_logs!(socket.assigns.filters), reset: true)}
   end
 
   @impl true
   def handle_event("ip_delete", %{"ip" => ip}, socket) do
-    {_n, deleted_logs} = Logs.delete_logs_by_ip(ip)
+    :ok = Logs.delete_logs_by_ip(ip)
 
-    new_socket =
-      Enum.reduce(deleted_logs, socket, fn log, acc_socket ->
-        stream_delete(acc_socket, :logs, log)
-      end)
-
-    {:noreply, new_socket}
+    {:noreply,
+     socket
+     |> stream(:logs, Logs.list_logs!(socket.assigns.filters), reset: true)}
   end
 
   @impl true

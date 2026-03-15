@@ -3,9 +3,11 @@ defmodule LoritoWeb.UserSettingsLive do
 
   def render(assigns) do
     ~H"""
-    <.header class="text-center">
-      Account Settings
+    <.header>
+      User preferences
     </.header>
+
+    <div class="divider divider-accent divider-start pt-8">Display</div>
 
     <.simple_form for={@form} id="user-settings-form" phx-submit="save">
       <.input
@@ -17,7 +19,7 @@ defmodule LoritoWeb.UserSettingsLive do
       >
       </.input>
       <:actions>
-        <.button class="btn btn-primary" phx-disable-with="Changing...">Save</.button>
+        <.button class="btn btn-primary btn-sm" phx-disable-with="Saving...">Save</.button>
       </:actions>
     </.simple_form>
     """

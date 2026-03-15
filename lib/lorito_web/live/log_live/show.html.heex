@@ -22,8 +22,11 @@
       catch-all
     <% end %>
   </:item>
+</.list>
+
+<.list :if={@protocol == :http}>
+  <:item title="IP">{@log.ip}</:item>
   <:item title="Method">{@log.method}</:item>
-  <:item title="Ip">{@log.ip}</:item>
   <:item title="Url">{@log.url}</:item>
   <:item title="Headers">
     <table class="table w-full">
@@ -45,7 +48,7 @@
       </tbody>
     </table>
   </:item>
-  <:item :if={@log.params} title="Params">
+  <:item :if={Enum.count(@log.params) > 0} title="Params">
     <table class="table w-full">
       <thead>
         <tr>
@@ -75,6 +78,11 @@
     </table>
   </:item>
   <:item title="Body">{@log.body}</:item>
+</.list>
+<.list :if={@protocol == :dns}>
+  <:item title="IP">{@log.ip}</:item>
+  <:item title="Record type">{@log.record_type}</:item>
+  <:item title="Query domain">{@log.query_name}</:item>
 </.list>
 <%= case @live_action do %>
   <% :log_show-> %>

@@ -10,10 +10,13 @@ defmodule LoritoWeb.LogLive.Show do
 
   @impl true
   def handle_params(%{"id" => id}, _, %{assigns: %{live_action: live_action}} = socket) do
+    log = Logs.get_log_by_id!(id)
+
     {:noreply,
      socket
      |> assign(:page_title, "Show Log")
-     |> assign(:log, Logs.get_log_by_id!(id))
+     |> assign(:log, log.implementation.value)
+     |> assign(:protocol, log.protocol)
      |> assign(:live_action, live_action)}
   end
 end

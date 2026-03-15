@@ -74,8 +74,8 @@ defmodule Lorito.Test.Generators do
     )
   end
 
-  def log(opts \\ []) do
-    changeset_generator(Lorito.Logs.Log, :create,
+  def http_log(opts \\ []) do
+    changeset_generator(Lorito.Logs.HTTP, :create,
       defaults: [
         ip: Faker.Internet.ip_v4_address(),
         method: "GET",
@@ -88,6 +88,19 @@ defmodule Lorito.Test.Generators do
       ],
       overrides: opts,
       actor: opts[:actor]
+    )
+  end
+
+  def dns_log(opts \\ []) do
+    changeset_generator(Lorito.Logs.DNS, :create,
+      defaults: [
+        query_name: "test.lorito.test",
+        record_type: "A",
+        ip: Faker.Internet.ip_v4_address(),
+        workspace_id: opts[:workspace_id],
+        project_id: opts[:project_id]
+      ],
+      overrides: opts
     )
   end
 end

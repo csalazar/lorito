@@ -9,8 +9,7 @@ defmodule Lorito.Logs do
     resource Lorito.Logs.Log do
       define :list_logs, action: :list_logs
       define :get_log_by_id, action: :read, get_by: [:id]
-      define :create_log, action: :create
-      define :delete_log, action: :destroy
+      define :delete_log, action: :delete_log, args: [:log]
       define :delete_logs_by_ip, action: :delete_logs_by_ip, args: [:ip]
       define :delete_logs_by_type, action: :delete_logs_by_type, args: [:type]
     end
@@ -27,6 +26,14 @@ defmodule Lorito.Logs do
       define :send_integration_notification,
         action: :send_notification,
         args: [:integration, :log]
+    end
+
+    resource Lorito.Logs.HTTP do
+      define :create_http_log, action: :create
+    end
+
+    resource Lorito.Logs.DNS do
+      define :create_dns_log, action: :create
     end
   end
 

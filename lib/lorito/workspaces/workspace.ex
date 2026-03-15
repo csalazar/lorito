@@ -140,11 +140,17 @@ defmodule Lorito.Workspaces.Workspace do
               {:array, :string},
               fn records, _context ->
                 Enum.map(records, fn record ->
-                  record.rebindings
-                  |> Enum.map(fn r -> r.route end)
+                  if record.rebindings == nil do
+                    []
+                  else
+                    record.rebindings
+                    |> Enum.map(fn r -> r.route end)
+                  end
                 end)
               end
   end
+
+
 
   identities do
     identity :unique_id_per_project, [:id, :project_id]

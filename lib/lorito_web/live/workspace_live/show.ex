@@ -117,7 +117,9 @@ defmodule LoritoWeb.WorkspaceLive.Show do
         },
         socket
       ) do
-    {:noreply, stream_insert(socket, :logs, log, at: 0)}
+
+      log = Logs.get_log_by_id!(log.id)
+      {:noreply, stream_insert(socket, :logs, log, at: 0)}
   end
 
   @impl true
