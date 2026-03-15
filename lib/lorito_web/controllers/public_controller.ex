@@ -224,18 +224,15 @@ defmodule LoritoWeb.PublicController do
   @doc """
   Main entrypoint for handling requests.
   """
-  def process_requests(conn, %{"route" => paths}) do
-    path =
-      URI.encode(Enum.join(paths, "/"))
-
-    # _lorito application paths are handled by the Phoenix router
-    # however, not registered paths will end up here
-    if String.starts_with?(path, "_lorito") do
-      conn |> put_status(404) |> json(nil)
-    else
+  def process_requests(%{host: host} = conn, %{"route" => paths}) do
+    with true <- LoritoWeb.Utils.is_in_scope?(host),
+         path <- URI.encode(Enum.join(paths, "/")),
+         false <- String.starts_with?(path, "_lorito") do
       get_workspace(path)
       |> rate_limit(conn)
       |> forward_request(conn)
+    else
+      _ -> conn |> put_status(404) |> json(nil)
     end
   end
 end

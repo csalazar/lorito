@@ -5,7 +5,7 @@ defmodule LoritoWeb.PublicControllerTest do
   import Lorito.Test.Generators
 
   setup do
-    conn = Phoenix.ConnTest.build_conn()
+    conn = Phoenix.ConnTest.build_conn(:get, "http://localhost")
     {:ok, conn: conn}
   end
 
@@ -39,6 +39,16 @@ defmodule LoritoWeb.PublicControllerTest do
 
       assert conn.status == response.status
       assert response(conn, response.status) == response.body
+    end
+  end
+
+  describe "out of scope" do
+    test "request goes to a different host" do
+      conn = Phoenix.ConnTest.build_conn(:get, "http://otherdomain.tld")
+      conn = get(conn, "/some/path")
+      assert json_response(conn, 404) == nil
+
+      assert Lorito.Logs.list_logs!(%{scoped_logs: false}) == []
     end
   end
 end
