@@ -36,8 +36,18 @@ defmodule LoritoWeb.SettingsLive do
     <.simple_form for={@form} phx-submit="save" phx-change="validate">
       <.input field={@form[:dns_enabled]} type="checkbox" label="DNS server" />
       <.input field={@form[:dns_domain]} type="text" label="Domain" disabled={not @dns_enabled} />
-      <.input field={@form[:dns_ipv4_address]} type="text" label="IPv4 address" disabled={not @dns_enabled} />
-      <.input field={@form[:dns_ipv6_address]} type="text" label="IPv6 address" disabled={not @dns_enabled} />
+      <.input
+        field={@form[:dns_ipv4_address]}
+        type="text"
+        label="IPv4 address"
+        disabled={not @dns_enabled}
+      />
+      <.input
+        field={@form[:dns_ipv6_address]}
+        type="text"
+        label="IPv6 address"
+        disabled={not @dns_enabled}
+      />
       <:actions>
         <.button class="btn btn-primary btn-sm" phx-disable-with="Saving...">Save</.button>
       </:actions>

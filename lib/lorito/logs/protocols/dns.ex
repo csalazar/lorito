@@ -26,6 +26,14 @@ defmodule Lorito.Logs.DNS do
     end
   end
 
+  pub_sub do
+    module LoritoWeb.Endpoint
+
+    prefix "log"
+    publish :create, ["created"]
+    publish :create, [[:workspace_id], "created"]
+  end
+
   attributes do
     uuid_primary_key :id
     attribute :query_name, :string, allow_nil?: false
@@ -38,14 +46,6 @@ defmodule Lorito.Logs.DNS do
   relationships do
     belongs_to :workspace, Lorito.Workspaces.Workspace, attribute_type: :string, allow_nil?: true
     belongs_to :project, Lorito.Projects.Project, attribute_type: :string, allow_nil?: true
-  end
-
-  pub_sub do
-    module LoritoWeb.Endpoint
-
-    prefix "log"
-    publish :create, ["created"]
-    publish :create, [[:workspace_id], "created"]
   end
 
   calculations do

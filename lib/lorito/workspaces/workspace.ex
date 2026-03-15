@@ -150,8 +150,6 @@ defmodule Lorito.Workspaces.Workspace do
               end
   end
 
-
-
   identities do
     identity :unique_id_per_project, [:id, :project_id]
     identity :unique_path, [:path]
