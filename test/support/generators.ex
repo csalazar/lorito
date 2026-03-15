@@ -42,6 +42,7 @@ defmodule Lorito.Test.Generators do
         content_type: "text/html",
         body: Faker.Lorem.paragraph(),
         route: "test-route",
+        delay: 0,
         workspace_id: opts[:workspace].id,
         template_id: nil,
         placeholders: [],

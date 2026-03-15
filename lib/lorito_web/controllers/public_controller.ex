@@ -89,7 +89,7 @@ defmodule LoritoWeb.ResponseHandler do
         |> to_string()
       end
 
-    if response.delay do
+    if is_integer(response.delay) and response.delay > 0 do
       :timer.sleep(response.delay * 1_000)
     end
 
