@@ -69,7 +69,7 @@
                     Invalid image format: {value}
                   <% end %>
                 <% _ -> %>
-                  {value}
+                  {if is_map(value), do: Jason.encode!(value), else: value}
               <% end %>
             </td>
           </tr>
