@@ -112,7 +112,11 @@ defmodule Lorito.Workspaces.Workspace do
     belongs_to :user, Lorito.Accounts.User, allow_nil?: false
     belongs_to :project, Lorito.Projects.Project, attribute_type: :string, allow_nil?: false
     belongs_to :template, Lorito.Templates.Template, allow_nil?: true
-    has_many :logs, Lorito.Logs.Log
+
+    has_many :logs, Lorito.Logs.Log do
+      sort inserted_at: :desc
+    end
+
     has_many :responses, Lorito.Responses.Response
   end
 
