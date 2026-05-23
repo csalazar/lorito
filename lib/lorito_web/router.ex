@@ -32,7 +32,10 @@ defmodule LoritoWeb.Router do
     # Remove these if you'd like to use your own authentication views
     sign_in_route auth_routes_prefix: "/auth",
                   on_mount: [{LoritoWeb.LiveUserAuth, :live_no_user}],
-                  overrides: [AshAuthentication.Phoenix.Overrides.DaisyUI]
+                  overrides: [
+                    LoritoWeb.AuthOverrides,
+                    AshAuthentication.Phoenix.Overrides.DaisyUI
+                  ]
   end
 
   scope "/_lorito", LoritoWeb do
