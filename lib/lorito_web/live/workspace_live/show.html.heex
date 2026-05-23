@@ -92,9 +92,11 @@
     <% end %>
   </:col>
   <:col :let={{_id, response}} label="Headers">
-    <ul :for={header <- response.headers}>
-      <li>{header.name}: {header.value}</li>
-    </ul>
+    <%= if response.headers != nil do %>
+      <ul :for={header <- response.headers}>
+        <li>{header.name}: {header.value}</li>
+      </ul>
+    <% end %>
   </:col>
   <:action :let={{id, response}}>
     <.button
