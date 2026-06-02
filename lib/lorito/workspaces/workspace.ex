@@ -144,12 +144,8 @@ defmodule Lorito.Workspaces.Workspace do
               {:array, :string},
               fn records, _context ->
                 Enum.map(records, fn record ->
-                  if record.rebindings == nil do
-                    []
-                  else
-                    record.rebindings
-                    |> Enum.map(fn r -> r.route end)
-                  end
+                  record.rebindings
+                  |> Enum.map(fn r -> r.route end)
                 end)
               end
   end
