@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+## v0.4.0
+
+### Added
+
+- DNS server to log queries
+- Scoped mode: only log scoped requests, either by workspace, subdomain or custom path.
+  This is how to combat unsolicited requests from bots.
+
+### Changed
+
+- Upgrade docker image to trixie and Elixir 1.18.
+
+### Fixed
+
+- Default list value for Ash references
+- Fix many bugs reported in Sentry
+
 
 ## v0.3.0
 

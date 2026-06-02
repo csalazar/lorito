@@ -6,6 +6,14 @@
 
 Please read the [introduction blog post](https://csal.medium.com/introducing-lorito-a-security-http-suite-153c6df05516).
 
+# Features
+* Create custom HTTP responses to exploit various types of web vulnerabilities.
+* Support templates and delivery payloads
+* Log DNS requests
+* Support custom subdomains per project
+* Scoped mode to reduce traffic noise
+* Receive notifications in Discord
+
 # Architecture
 
 lorito is a web app written in Elixir
@@ -109,6 +117,10 @@ and the DNS requests should appear on the main logs.
 
 The SSL certificate should be emitted for `*.subdomain.domain.tld`
 to respond successfully to HTTPS requests.
+
+This will publish your subdomain to Certificate Transparency logs
+and your instance would become reachable by bots.
+To stay focus, enable the new scoped mode in Settings.
 
 ## fly.io
 
