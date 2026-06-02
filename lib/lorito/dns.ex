@@ -137,8 +137,6 @@ defmodule Lorito.DnsServer do
         Logger.debug("Answering DNS query ..")
         send_dns_response(record, query, ip, wtv, state)
 
-        Logger.debug("Logging DNS query ..")
-
         project_id =
           with subdomain when not is_nil(subdomain) <-
                  LoritoWeb.Utils.get_subdomain(fqdn),
@@ -148,14 +146,19 @@ defmodule Lorito.DnsServer do
             _ -> nil
           end
 
-        {:ok, _} =
-          Lorito.Logs.create_dns_log(%{
-            query_name: fqdn,
-            record_type: query.type |> to_string() |> String.upcase(),
-            ip: ip |> :inet_parse.ntoa() |> to_string(),
-            workspace_id: nil,
-            project_id: project_id
-          })
+        # Scoped mode keeps only logs associated to a scoped project.
+        if not Lorito.Utils.scoped_mode_enabled?() or not is_nil(project_id) do
+          Logger.debug("Logging DNS query ..")
+
+          {:ok, _} =
+            Lorito.Logs.create_dns_log(%{
+              query_name: fqdn,
+              record_type: query.type |> to_string() |> String.upcase(),
+              ip: ip |> :inet_parse.ntoa() |> to_string(),
+              workspace_id: nil,
+              project_id: project_id
+            })
+        end
       end
     end
 

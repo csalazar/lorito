@@ -30,14 +30,22 @@ defmodule Lorito.DnsServerTest do
     Lorito.Settings.update_settings!(setting, %{data: data})
   end
 
-  describe "when dns is enabled" do
-    setup do
-      put_settings!(%{
+  defp dns_settings(overrides \\ %{}) do
+    Map.merge(
+      %{
         "dns_enabled" => true,
         "dns_domain" => "lorito.test",
         "dns_ipv4_address" => "127.0.0.1",
-        "dns_ipv6_address" => "::1"
-      })
+        "dns_ipv6_address" => "::1",
+        "scoped_mode" => false
+      },
+      overrides
+    )
+  end
+
+  describe "when dns is enabled" do
+    setup do
+      put_settings!(dns_settings())
 
       :ok
     end
@@ -76,6 +84,44 @@ defmodule Lorito.DnsServerTest do
       end
 
       assert Ash.read!(Lorito.Logs.DNS) == []
+    end
+
+    test "does not create unscoped dns logs when scoped mode is enabled" do
+      put_settings!(dns_settings(%{"scoped_mode" => true}))
+
+      with_mock LoritoWeb.Utils, [:passthrough],
+        is_in_scope?: fn _ -> true end,
+        get_subdomain: fn _ -> nil end do
+        with_mock Socket.Datagram, send!: fn _, _, _ -> :ok end do
+          Lorito.DnsServer.handle_info(
+            {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary("lorito.test")},
+            fake_state()
+          )
+        end
+      end
+
+      assert Ash.read!(Lorito.Logs.DNS) == []
+    end
+
+    test "creates scoped dns logs when scoped mode is enabled" do
+      put_settings!(dns_settings(%{"scoped_mode" => true}))
+
+      user = generate(user())
+      project = generate(project(subdomain: "testproject", actor: user))
+
+      with_mock LoritoWeb.Utils, [:passthrough],
+        is_in_scope?: fn _ -> true end,
+        get_subdomain: fn _ -> "testproject" end do
+        with_mock Socket.Datagram, send!: fn _, _, _ -> :ok end do
+          Lorito.DnsServer.handle_info(
+            {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary("testproject.lorito.test")},
+            fake_state()
+          )
+        end
+      end
+
+      [log] = Ash.read!(Lorito.Logs.DNS)
+      assert log.project_id == project.id
     end
   end
 

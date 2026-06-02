@@ -3,7 +3,8 @@ defmodule LoritoWeb.SettingsLive do
 
   alias Lorito.Settings
 
-  @dns_keys ~w(dns_enabled dns_domain dns_ipv4_address dns_ipv6_address)
+  @settings_keys ~w(dns_enabled dns_domain dns_ipv4_address dns_ipv6_address scoped_mode)
+  @boolean_keys ~w(dns_enabled scoped_mode)
 
   @impl true
   def mount(_params, _session, socket) do
@@ -11,8 +12,8 @@ defmodule LoritoWeb.SettingsLive do
     data = setting.data
 
     form_data =
-      Map.new(@dns_keys, fn
-        "dns_enabled" = key -> {key, Map.get(data, key, false)}
+      Map.new(@settings_keys, fn
+        key when key in @boolean_keys -> {key, Map.get(data, key, false)}
         key -> {key, Map.get(data, key, "")}
       end)
 
@@ -48,6 +49,15 @@ defmodule LoritoWeb.SettingsLive do
         label="IPv6 address"
         disabled={not @dns_enabled}
       />
+
+      <div class="divider divider-accent divider-start pt-8">Request Logs</div>
+
+      <.input
+        field={@form[:scoped_mode]}
+        type="checkbox"
+        label="Scoped mode (skip catch-all logs)"
+      />
+
       <:actions>
         <.button class="btn btn-primary btn-sm" phx-disable-with="Saving...">Save</.button>
       </:actions>
@@ -79,8 +89,8 @@ defmodule LoritoWeb.SettingsLive do
       {:noreply, assign(socket, :form, to_form(merged, as: "dns", errors: errors))}
     else
       new_data =
-        Map.new(@dns_keys, fn
-          "dns_enabled" = k -> {k, merged[k] in [true, "true"]}
+        Map.new(@settings_keys, fn
+          k when k in @boolean_keys -> {k, merged[k] in [true, "true"]}
           k -> {k, merged[k] || ""}
         end)
 

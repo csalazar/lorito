@@ -198,7 +198,9 @@ defmodule LoritoWeb.PublicController do
       RequestLogger.log(conn, project)
     else
       _ ->
-        RequestLogger.log(conn)
+        if not Lorito.Utils.scoped_mode_enabled?() do
+          RequestLogger.log(conn)
+        end
     end
 
     conn |> put_status(404) |> json(nil)

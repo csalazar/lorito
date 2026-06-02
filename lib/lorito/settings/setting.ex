@@ -18,13 +18,17 @@ defmodule Lorito.Settings.Setting do
       require_atomic? false
 
       change fn changeset, _ ->
-        case Ash.Changeset.get_attribute(changeset, :data) do
-          %{"dns_enabled" => dns_enabled} = data ->
-            normalized = Map.put(data, "dns_enabled", dns_enabled in [true, "true"])
-            Ash.Changeset.change_attribute(changeset, :data, normalized)
+        data = Ash.Changeset.get_attribute(changeset, :data)
 
-          _ ->
-            changeset
+        if is_map(data) do
+          normalized =
+            data
+            |> normalize_bool_key("dns_enabled")
+            |> normalize_bool_key("scoped_mode")
+
+          Ash.Changeset.change_attribute(changeset, :data, normalized)
+        else
+          changeset
         end
       end
     end
@@ -34,5 +38,12 @@ defmodule Lorito.Settings.Setting do
     uuid_primary_key :id
     attribute :data, :map, allow_nil?: false, default: %{}
     timestamps()
+  end
+
+  defp normalize_bool_key(data, key) do
+    case Map.fetch(data, key) do
+      {:ok, value} -> Map.put(data, key, value in [true, "true"])
+      :error -> data
+    end
   end
 end
