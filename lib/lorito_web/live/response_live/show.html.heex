@@ -16,7 +16,7 @@
   <:item title="Route">{@response.route}</:item>
   <:item title="Status">{@response.status}</:item>
   <:item title="Content-Type">{@response.content_type}</:item>
-  <:item :if={@response.headers && Enum.count(@response.headers) > 0} title="Headers">
+  <:item :if={Enum.count(@response.headers) > 0} title="Headers">
     <table class="table w-full">
       <thead>
         <tr>
