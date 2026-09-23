@@ -13,7 +13,8 @@ defmodule Lorito.MixProject do
       preferred_cli_env: [
         test: :test
       ],
-      consolidate_protocols: Mix.env() != :dev
+      consolidate_protocols: Mix.env() != :dev,
+      hex: [cooldown: "7d", policy_enforce_lock: true]
     ]
   end
 
@@ -48,12 +49,12 @@ defmodule Lorito.MixProject do
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_live_view, "~> 1.0"},
-      {:plug_cowboy, "~> 2.5"},
+      {:plug_cowboy, "~> 2.9"},
       {:postgrex, "~> 0.18"},
       {:timex, "~> 3.7"},
       {:remote_ip, "~> 1.0"},
-      {:req, "~> 0.5.0"},
-      {:sentry, "~> 11.0.2"},
+      {:req, "~> 0.7.0"},
+      {:sentry, "~> 13.0"},
       {:socket, "~> 0.3.13"},
       {:solid, "~> 1.0"},
       {:igniter, "~> 0.6", only: [:dev, :test]},

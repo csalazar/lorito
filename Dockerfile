@@ -11,9 +11,9 @@
 #   - https://pkgs.org/ - resource for finding needed packages
 #   - Ex: hexpm/elixir:1.17.3-erlang-27.1.2-debian-bullseye-20241202-slim
 #
-ARG ELIXIR_VERSION=1.18.4
-ARG OTP_VERSION=28.5
-ARG DEBIAN_VERSION=trixie-20260518-slim
+ARG ELIXIR_VERSION=1.19.6
+ARG OTP_VERSION=28.5.0.7
+ARG DEBIAN_VERSION=trixie-20260918-slim
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
