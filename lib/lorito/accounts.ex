@@ -11,5 +11,11 @@ defmodule Lorito.Accounts do
       define :register_user, action: :register
       define :update_user, action: :update
     end
+
+    resource Lorito.Accounts.ApiKey do
+      define :create_api_key, action: :create
+      define :list_api_keys, action: :read
+      define :destroy_api_key, action: :destroy
+    end
   end
 end

@@ -9,6 +9,12 @@ defmodule Lorito.Projects.Project do
   actions do
     defaults [:read, :destroy]
 
+    read :get_by_name do
+      argument :name, :string, allow_nil?: false
+      filter expr(name == ^arg(:name))
+      get? true
+    end
+
     create :create do
       primary? true
       accept [:name, :notifiable, :subdomain]

@@ -12,6 +12,16 @@ defmodule Lorito.Settings.Setting do
   actions do
     defaults [:read]
 
+    action :get_settings, :map do
+      run fn _input, context ->
+        opts = Ash.Scope.to_opts(context, not_found_error?: true)
+
+        with {:ok, setting} <- Ash.read_one(__MODULE__, opts) do
+          {:ok, setting.data}
+        end
+      end
+    end
+
     update :update do
       primary? true
       accept [:data]

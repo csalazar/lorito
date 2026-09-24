@@ -1,7 +1,15 @@
 defmodule Lorito.Templates do
   use Ash.Domain,
     otp_app: :lorito,
-    extensions: [AshPhoenix]
+    extensions: [AshPhoenix, AshAi]
+
+  tools do
+    tool :list_templates, Lorito.Templates.Template, :read do
+      description "List templates. "
+
+      load [:id, :name]
+    end
+  end
 
   resources do
     resource Lorito.Templates.Template do

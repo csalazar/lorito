@@ -3,13 +3,6 @@ defmodule LoritoWeb.Router do
 
   use AshAuthentication.Phoenix.Router
 
-  import AshAuthentication.Plug.Helpers
-
-  pipeline :api do
-    plug :load_from_bearer
-    plug :set_actor, :user
-  end
-
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -22,6 +15,12 @@ defmodule LoritoWeb.Router do
 
   pipeline :public do
     plug :accepts, ~w(html json)
+  end
+
+  pipeline :mcp do
+    plug AshAuthentication.Strategy.ApiKey.Plug,
+      resource: Lorito.Accounts.User,
+      required?: true
   end
 
   scope "/_lorito", LoritoWeb do
@@ -97,6 +96,26 @@ defmodule LoritoWeb.Router do
         live "/workspaces/:workspace_id/logs/:id", LogLive.Show, :workspace_log_show
       end
     end
+  end
+
+  scope "/_lorito/mcp" do
+    pipe_through :mcp
+
+    forward "/", AshAi.Mcp.Router,
+      tools: [
+        :list_templates,
+        :list_projects,
+        :create_project,
+        :get_project_by_name,
+        :list_workspaces_by_project,
+        :create_workspace,
+        :create_response_for_workspace,
+        :list_logs,
+        :delete_log,
+        :get_settings
+      ],
+      protocol_version_statement: "2025-03-26",
+      otp_app: :lorito
   end
 
   scope "/", LoritoWeb do

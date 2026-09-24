@@ -39,7 +39,8 @@ defmodule Lorito.Workspaces.Workspace do
                   :responses,
                   :logs,
                   :template,
-                  :project
+                  :project,
+                  :full_url
                 ]
               )
 
@@ -148,6 +149,22 @@ defmodule Lorito.Workspaces.Workspace do
                   |> Enum.map(fn r -> r.route end)
                 end)
               end
+
+    calculate :full_url, :string, fn records, _context ->
+      Enum.map(records, fn record ->
+        record =
+          if Ash.Resource.loaded?(record, :project) do
+            record
+          else
+            Ash.load!(record, :project)
+          end
+
+        LoritoWeb.Endpoint.url()
+        |> LoritoWeb.Utils.add_subdomain_to_url(record.project)
+        |> URI.merge(record.computed_path)
+        |> URI.to_string()
+      end)
+    end
   end
 
   identities do

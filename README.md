@@ -13,6 +13,7 @@ Please read the [introduction blog post](https://csal.medium.com/introducing-lor
 * Support custom subdomains per project
 * Scoped mode to reduce traffic noise
 * Receive notifications in Discord
+* MCP server at `/_lorito/mcp` (API key required)
 
 # Architecture
 

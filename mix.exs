@@ -10,11 +10,17 @@ defmodule Lorito.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      consolidate_protocols: Mix.env() != :dev,
+      hex: [cooldown: "7d", policy_enforce_lock: true],
+      listeners: [Phoenix.CodeReloader]
+    ]
+  end
+
+  def cli do
+    [
       preferred_cli_env: [
         test: :test
-      ],
-      consolidate_protocols: Mix.env() != :dev,
-      hex: [cooldown: "7d", policy_enforce_lock: true]
+      ]
     ]
   end
 
@@ -35,6 +41,7 @@ defmodule Lorito.MixProject do
   defp deps do
     [
       {:ash, "~> 3.18"},
+      {:ash_ai, "~> 1.1"},
       {:ash_authentication_phoenix, "~> 2.0"},
       {:ash_postgres, "~> 2.0"},
       {:bcrypt_elixir, "~> 3.0"},
@@ -65,6 +72,7 @@ defmodule Lorito.MixProject do
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:versioce, "~> 2.0.0", only: :dev},
       {:faker, "~> 0.18", only: :test},
+      {:lazy_html, ">= 0.1.0", only: :test},
       {:floki, ">= 0.30.0", only: :test},
       {:mock, "~> 0.3.0", only: :test}
     ]

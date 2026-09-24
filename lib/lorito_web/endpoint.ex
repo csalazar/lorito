@@ -31,6 +31,11 @@ defmodule LoritoWeb.Endpoint do
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: :lorito
+
+    plug AshAi.Mcp.Dev,
+      protocol_version_statement: "2025-03-26",
+      otp_app: :lorito,
+      path: "/ash_ai/mcp"
   end
 
   plug Plug.RequestId

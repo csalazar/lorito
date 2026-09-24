@@ -21,6 +21,11 @@ defmodule Lorito.Accounts.User do
         hash_provider AshAuthentication.BcryptProvider
         registration_enabled? false
       end
+
+      api_key :api_key do
+        api_key_relationship :valid_api_keys
+        api_key_hash_attribute :api_key_hash
+      end
     end
   end
 
@@ -102,6 +107,11 @@ defmodule Lorito.Accounts.User do
       description "Looks up a user by their email"
       get_by :email
     end
+
+    read :sign_in_with_api_key do
+      argument :api_key, :string, allow_nil?: false
+      prepare AshAuthentication.Strategy.ApiKey.SignInPreparation
+    end
   end
 
   policies do
@@ -131,6 +141,12 @@ defmodule Lorito.Accounts.User do
 
     attribute :timezone, :string do
       default "UTC"
+    end
+  end
+
+  relationships do
+    has_many :valid_api_keys, Lorito.Accounts.ApiKey do
+      filter expr(valid)
     end
   end
 

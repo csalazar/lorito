@@ -21,20 +21,43 @@ defmodule Lorito.Logs.Log do
 
     read :list_logs do
       argument :scoped_logs, :boolean, default: false
+      argument :project_id, :string
+      argument :workspace_id, :string
+      argument :inserted_after, :utc_datetime
 
       filter expr(
-               if ^arg(:scoped_logs) != false do
-                 not is_nil(project_id)
-               else
-                 true
-               end
+               (^arg(:scoped_logs) == false or not is_nil(project_id)) and
+                 (is_nil(^arg(:project_id)) or project_id == ^arg(:project_id)) and
+                 (is_nil(^arg(:workspace_id)) or workspace_id == ^arg(:workspace_id)) and
+                 (is_nil(^arg(:inserted_after)) or inserted_at >= ^arg(:inserted_after))
              )
 
       prepare build(
-                load: [:project, :workspace, :implementation],
+                load: [
+                  :project,
+                  :workspace,
+                  :implementation,
+                  http_details: [:host],
+                  dns_details: [:host]
+                ],
                 limit: 100,
                 sort: [inserted_at: :desc]
               )
+    end
+
+    action :delete_log_by_id, :boolean do
+      argument :log_id, :uuid, allow_nil?: false
+
+      run fn input, context ->
+        opts = Ash.Scope.to_opts(context)
+
+        with {:ok, log} <- Ash.get(__MODULE__, input.arguments.log_id, opts),
+             {:ok, record} <-
+               Ash.get(Lorito.Logs.Helpers.log_protocol_to_module(log.protocol), log.id, opts),
+             :ok <- Ash.destroy(record, opts) do
+          {:ok, true}
+        end
+      end
     end
 
     action :delete_log do
