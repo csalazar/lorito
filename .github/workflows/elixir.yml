@@ -40,10 +40,10 @@ jobs:
     - name: Create .env.exs file
       run: bash .devcontainer/create_dotenv.sh
     - name: Set up Elixir
-      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1.20.4
+      uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
       with:
-        elixir-version: '1.17.3' # [Required] Define the Elixir version
-        otp-version: '26.2.5.6'      # [Required] Define the Erlang/OTP version
+        elixir-version: '1.19.6' # [Required] Define the Elixir version
+        otp-version: '28.5.0.7'      # [Required] Define the Erlang/OTP version
     - name: Restore dependencies cache
       uses: actions/cache@v3
       with:
