@@ -9,7 +9,8 @@ defmodule LoritoWeb.McpTest do
     user = generate(user())
 
     key =
-      Lorito.Accounts.create_api_key!(%{expires_at: DateTime.add(DateTime.utc_now(), 3600)},
+      Lorito.Accounts.create_api_key!(
+        %{name: "Test key", expires_at: DateTime.add(DateTime.utc_now(), 3600)},
         actor: user
       )
 
@@ -43,7 +44,8 @@ defmodule LoritoWeb.McpTest do
     token: token
   } do
     expired =
-      Lorito.Accounts.create_api_key!(%{expires_at: DateTime.add(DateTime.utc_now(), -60)},
+      Lorito.Accounts.create_api_key!(
+        %{name: "Test key", expires_at: DateTime.add(DateTime.utc_now(), -60)},
         actor: user
       )
 

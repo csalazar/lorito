@@ -15,7 +15,7 @@ defmodule Lorito.Accounts.ApiKey do
 
     create :create do
       primary? true
-      accept [:expires_at]
+      accept [:name, :expires_at]
       change relate_actor(:user)
 
       change {AshAuthentication.Strategy.ApiKey.GenerateApiKey,
@@ -49,9 +49,12 @@ defmodule Lorito.Accounts.ApiKey do
       sensitive? true
     end
 
-    attribute :expires_at, :utc_datetime_usec do
+    attribute :name, :string do
       allow_nil? false
+      constraints trim?: true, allow_empty?: false, max_length: 100
     end
+
+    attribute :expires_at, :utc_datetime_usec
   end
 
   relationships do
@@ -59,7 +62,7 @@ defmodule Lorito.Accounts.ApiKey do
   end
 
   calculations do
-    calculate :valid, :boolean, expr(expires_at > now())
+    calculate :valid, :boolean, expr(is_nil(expires_at) or expires_at > now())
   end
 
   identities do
