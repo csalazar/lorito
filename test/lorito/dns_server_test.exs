@@ -50,6 +50,30 @@ defmodule Lorito.DnsServerTest do
       :ok
     end
 
+    test "binds the configured unprivileged DNS port" do
+      original_port = Application.get_env(:lorito, :dns_port)
+      {:ok, probe} = :gen_udp.open(0, [:binary, active: false])
+      {:ok, port} = :inet.port(probe)
+      :gen_udp.close(probe)
+      Application.put_env(:lorito, :dns_port, port)
+
+      on_exit(fn ->
+        if original_port,
+          do: Application.put_env(:lorito, :dns_port, original_port),
+          else: Application.delete_env(:lorito, :dns_port)
+      end)
+
+      {:ok, server} = Lorito.DnsServer.start_link([])
+
+      try do
+        state = :sys.get_state(server)
+        assert state.server_data.port == port
+        assert {:ok, ^port} = :inet.port(state.socket)
+      after
+        GenServer.stop(server)
+      end
+    end
+
     test "creates a dns log for an in-scope query" do
       user = generate(user())
       project = generate(project(subdomain: "testproject", actor: user))

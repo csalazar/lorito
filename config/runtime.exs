@@ -1,5 +1,17 @@
 import Config
 
+dns_port =
+  case Integer.parse(System.get_env("DNS_PORT", "53")) do
+    {port, ""} when port in 1..65_535 -> port
+    _ -> raise ArgumentError, "DNS_PORT must be an integer between 1 and 65535"
+  end
+
+config :lorito, :dns_port, dns_port
+
+if data_dir = System.get_env("TZDATA_DIR") do
+  config :tzdata, :data_dir, data_dir
+end
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration

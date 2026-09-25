@@ -58,7 +58,7 @@ defmodule Lorito.DnsServer do
       {:ok,
        %{
          domain: domain,
-         port: 53,
+         port: Application.get_env(:lorito, :dns_port, 53),
          public_ip_ipv4: ipv4,
          public_ip_ipv6: ipv6,
          binding_ip: binding_ip

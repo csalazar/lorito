@@ -88,6 +88,9 @@ as outlined in the previous section.
 
 # Deployment
 
+See [Docker runtime](docs/docker-runtime.md) for non-root deployment, DNS port
+mapping, and writable mounts.
+
 Root domains help keep URLs shorter.
 However, they might receive a lot of automated requests.
 Additionally, new lorito DNS capability

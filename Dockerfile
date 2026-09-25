@@ -1,28 +1,16 @@
-# Find eligible builder and runner images on Docker Hub. We use Ubuntu/Debian
-# instead of Alpine to avoid DNS resolution issues in production.
-#
-# https://hub.docker.com/r/hexpm/elixir/tags?page=1&name=ubuntu
-# https://hub.docker.com/_/ubuntu?tab=tags
-#
-# This file is based on these images:
-#
-#   - https://hub.docker.com/r/hexpm/elixir/tags - for the build image
-#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bullseye-20241202-slim - for the release image
-#   - https://pkgs.org/ - resource for finding needed packages
-#   - Ex: hexpm/elixir:1.17.3-erlang-27.1.2-debian-bullseye-20241202-slim
-#
+# Pin multi-platform base manifests; update versions and digests together.
 ARG ELIXIR_VERSION=1.19.6
 ARG OTP_VERSION=28.5.0.7
 ARG DEBIAN_VERSION=trixie-20260918-slim
 
-ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
-ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
+ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}@sha256:1db63b89c6cafefc3e00486495c0dfbf68dd38f3d9996fb6d2cfde691038aec7"
+ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a"
 
-FROM ${BUILDER_IMAGE} as builder
+FROM ${BUILDER_IMAGE} AS builder
 
 # install build dependencies
-RUN apt-get update -y && apt-get install -y build-essential git nodejs npm \
-    && apt-get clean && rm -f /var/lib/apt/lists/*_*
+RUN apt-get update -y && apt-get install -y --no-install-recommends build-essential git nodejs npm \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # prepare build dir
 WORKDIR /app
@@ -50,7 +38,7 @@ COPY priv priv
 COPY lib lib
 
 COPY assets assets
-RUN cd assets && npm install
+RUN cd assets && npm ci
 
 # compile assets
 RUN mix assets.deploy
@@ -69,25 +57,37 @@ RUN mix release
 FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
-  apt-get install -y libstdc++6 openssl libncurses6 locales ca-certificates \
-  && apt-get clean && rm -f /var/lib/apt/lists/*_*
+  apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 WORKDIR "/app"
-RUN chown nobody /app
+RUN groupadd --gid 10001 lorito \
+    && useradd --uid 10001 --gid 10001 --no-create-home \
+      --home-dir /var/lib/lorito --shell /usr/sbin/nologin lorito \
+    && install -d -o 10001 -g 10001 -m 0700 /var/lib/lorito/tzdata
 
 # set runner ENV
 ENV MIX_ENV="prod"
 
 # Only copy the final release from the build stage
-COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/lorito ./
+COPY --from=builder --chown=root:root /app/_build/${MIX_ENV}/rel/lorito ./
 
-USER root
+# Code is immutable to the runtime user. Only temp files and tzdata are writable.
+RUN chmod -R a+rX,go-w /app
+
+ENV DNS_PORT=4053 \
+    RELEASE_TMP=/tmp/lorito \
+    TZDATA_DIR=/var/lib/lorito/tzdata \
+    ERL_CRASH_DUMP=/tmp/erl_crash.dump
+
+EXPOSE 4000/tcp 4053/udp
+USER 10001:10001
 
 CMD ["/app/bin/server"]

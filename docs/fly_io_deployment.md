@@ -52,7 +52,7 @@ Add the following snippet to expose lorito DNS server.
 
 ```
 [[services]]
-  internal_port = 53
+  internal_port = 4053
   protocol = "udp"
   [[services.ports]]
     port = 53

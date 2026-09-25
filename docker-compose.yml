@@ -1,11 +1,19 @@
-version: "3.8"
-
 services:
   elixir:
     build:
       context: .
       dockerfile: Dockerfile
     env_file: ".env"
+    environment:
+      DNS_PORT: "4053"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+      - /var/lib/lorito/tzdata:rw,noexec,nosuid,nodev,size=32m,uid=10001,gid=10001,mode=0700
     ports:
-      - "53:53/udp"
+      - "4053:4053/udp"
       - "4000:4000"
