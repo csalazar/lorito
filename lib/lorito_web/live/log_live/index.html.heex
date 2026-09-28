@@ -25,9 +25,15 @@
   row_click={fn {_id, log} -> JS.navigate(~p"/_lorito/logs/#{log}") end}
   row_class={
     fn {_id, log} ->
-      case log.workspace || log.project do
-        nil -> []
-        _ -> ["dark:bg-neutral", "bg-yellow-50"]
+      hide_scoped_highlight =
+        @filters[:scoped_logs] or
+          (@scoped_mode_enabled and
+             Enum.all?(@log_page.results, fn log -> log.workspace || log.project end))
+
+      if not hide_scoped_highlight and (log.workspace || log.project) do
+        ["dark:bg-neutral", "bg-yellow-50"]
+      else
+        []
       end
     end
   }
