@@ -5,7 +5,11 @@ defmodule LoritoWeb.LogLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign(:page_title, "Listing Logs") |> stream(:logs, [])}
+    {:ok,
+     socket
+     |> assign(:page_title, "Listing Logs")
+     |> assign(:scoped_mode_enabled, Lorito.Utils.scoped_mode_enabled?())
+     |> stream(:logs, [])}
   end
 
   @impl true
