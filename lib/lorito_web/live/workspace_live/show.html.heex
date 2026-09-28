@@ -148,12 +148,18 @@
     {log.implementation.value.host}
   </:col>
   <:col :let={{_id, log}} label="Client IP">{log.implementation.value.ip}</:col>
-  <:col :let={{_id, log}} label="Method">{log.implementation.value.method}</:col>
+  <:col :let={{_id, log}} label="Method">
+    {if log.protocol == :http, do: log.implementation.value.method, else: "—"}
+  </:col>
   <:col :let={{_id, log}} label="Url">
-    {determine_relative_url(@workspace, log.implementation.value.url)}
+    {if log.protocol == :http,
+      do: determine_relative_url(@workspace, log.implementation.value.url),
+      else: "—"}
   </:col>
   <:col :let={{_id, log}} label="Body Length">
-    {(log.implementation.value.body && String.length(log.implementation.value.body)) || 0}
+    {if log.protocol == :http,
+      do: String.length(log.implementation.value.body || ""),
+      else: "—"}
   </:col>
   <:action :let={{_id, log}}>
     <div class="sr-only">

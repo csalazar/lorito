@@ -41,7 +41,10 @@ defmodule LoritoWeb.Router do
     pipe_through :browser
 
     ash_authentication_live_session :authentication_required,
-      on_mount: [{LoritoWeb.LiveUserAuth, :live_user_required}] do
+      on_mount: [
+        {LoritoWeb.LiveUserAuth, :live_user_required},
+        {LoritoWeb.LogNotifications, :default}
+      ] do
       live "/", ProjectLive.Index, :index
       live "/projects", ProjectLive.Index, :index
       live "/projects/new", ProjectLive.Index, :new

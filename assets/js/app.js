@@ -5,7 +5,9 @@ import { LiveSocket } from "phoenix_live_view";
 import { CodeEditorHook } from "../../deps/live_monaco_editor/priv/static/live_monaco_editor.esm";
 import topbar from "../vendor/topbar";
 
-let Hooks = {};
+import DesktopNotifications from "./desktop_notifications";
+
+let Hooks = { DesktopNotifications };
 Hooks.CodeEditorHook = CodeEditorHook;
 Hooks.HideFlash = {
   mounted() {

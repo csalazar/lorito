@@ -26,6 +26,25 @@ defmodule LoritoWeb.UserSettingsLive do
     </.simple_form>
 
     <div class="divider divider-accent divider-start pt-8">
+      <h2 class="font-semibold">Desktop notifications</h2>
+    </div>
+    <div class="pt-8">
+      <p class="text-sm">
+        Notify for all new logs while lorito is open in the background.
+      </p>
+      <div
+        id="desktop-notifications"
+        phx-hook="DesktopNotifications"
+        phx-update="ignore"
+        class="flex flex-col items-start gap-4 pt-4"
+      >
+        <button type="button" class="btn btn-primary btn-sm" aria-pressed="false" data-toggle>
+          Enable desktop notifications
+        </button>
+      </div>
+    </div>
+
+    <div class="divider divider-accent divider-start pt-8">
       <h2 class="font-semibold">API keys</h2>
     </div>
     <div class="flex items-center justify-end gap-4 pt-8 pb-4">

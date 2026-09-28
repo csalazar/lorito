@@ -5,9 +5,6 @@ defmodule LoritoWeb.LogLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket),
-      do: Phoenix.PubSub.subscribe(Lorito.PubSub, "log:created")
-
     filters = %{scoped_logs: false}
 
     {:ok,
@@ -25,19 +22,15 @@ defmodule LoritoWeb.LogLive.Index do
         },
         socket
       ) do
-    # Load project
-    filters = socket.assigns.filters
     log = Logs.get_log_by_id!(log.id)
 
-    if filters[:scoped_logs] do
-      # If `scoped_logs` filter is enabled, we only want to show logs from a project or workspace
-      if log.project_id || log.workspace_id do
-        {:noreply, stream_insert(socket, :logs, log, at: 0)}
-      else
-        {:noreply, socket}
-      end
+    if not socket.assigns.filters[:scoped_logs] or not is_nil(log.project_id) or
+         not is_nil(log.workspace_id) do
+      {:noreply,
+       socket
+       |> stream_insert(:logs, log, at: 0)}
     else
-      {:noreply, stream_insert(socket, :logs, log, at: 0)}
+      {:noreply, socket}
     end
   end
 
