@@ -45,6 +45,32 @@ defmodule Lorito.Logs.Log do
               )
     end
 
+    read :page_logs do
+      pagination keyset?: true, default_limit: 50, max_page_size: 100
+      argument :scoped_logs, :boolean, default: false
+      argument :project_id, :string
+      argument :workspace_id, :string
+      argument :inserted_after, :utc_datetime
+
+      filter expr(
+               (^arg(:scoped_logs) == false or not is_nil(project_id)) and
+                 (is_nil(^arg(:project_id)) or project_id == ^arg(:project_id)) and
+                 (is_nil(^arg(:workspace_id)) or workspace_id == ^arg(:workspace_id)) and
+                 (is_nil(^arg(:inserted_after)) or inserted_at >= ^arg(:inserted_after))
+             )
+
+      prepare build(
+                load: [
+                  :project,
+                  :workspace,
+                  :implementation,
+                  http_details: [:host],
+                  dns_details: [:host]
+                ],
+                sort: [inserted_at: :desc, id: :desc]
+              )
+    end
+
     action :delete_log_by_id, :boolean do
       argument :log_id, :uuid, allow_nil?: false
 

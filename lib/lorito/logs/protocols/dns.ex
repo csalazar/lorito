@@ -9,6 +9,11 @@ defmodule Lorito.Logs.DNS do
   postgres do
     table "dns_logs"
     repo Lorito.Repo
+
+    custom_indexes do
+      index [:inserted_at, :id]
+      index [:workspace_id, :inserted_at, :id]
+    end
   end
 
   actions do

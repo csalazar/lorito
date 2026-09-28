@@ -178,6 +178,13 @@
   </:action>
 </.table>
 
+<LoritoWeb.LogPagination.controls
+  log_page={@log_page}
+  log_path={@log_path}
+  log_query={@log_query}
+  new_logs_available={@new_logs_available}
+/>
+
 <.back navigate={~p"/_lorito/projects/#{@project}/workspaces"}>Back to workspaces</.back>
 
 <.modal

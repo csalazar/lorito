@@ -29,6 +29,7 @@ defmodule Lorito.Workspaces do
   resources do
     resource Lorito.Workspaces.Workspace do
       define :get_workspace, action: :get_workspace
+      define :get_workspace_page, action: :get_workspace_page
       define :get_workspace_by_path, action: :get_workspace_by_path, args: [:path]
       define :list_workspaces_by_project, action: :list_workspaces_by_project, args: [:project_id]
       define :create_workspace, action: :create

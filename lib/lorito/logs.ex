@@ -33,6 +33,7 @@ defmodule Lorito.Logs do
   resources do
     resource Lorito.Logs.Log do
       define :list_logs, action: :list_logs
+      define :page_logs, action: :page_logs
       define :get_log_by_id, action: :read, get_by: [:id]
       define :delete_log, action: :delete_log, args: [:log]
       define :delete_log_by_id, action: :delete_log_by_id, args: [:log_id]

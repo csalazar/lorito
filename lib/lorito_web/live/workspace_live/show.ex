@@ -16,19 +16,19 @@ defmodule LoritoWeb.WorkspaceLive.Show do
       do: Phoenix.PubSub.subscribe(Lorito.PubSub, "log:#{workspace_id}:created")
 
     workspace =
-      Workspaces.get_workspace!(%{id: workspace_id, project_id: project_id})
+      Workspaces.get_workspace_page!(%{id: workspace_id, project_id: project_id})
 
     {:ok,
      socket
      |> assign(:project, workspace.project)
      |> stream(:responses, workspace.responses)
-     |> stream(:logs, workspace.logs)}
+     |> stream(:logs, [])}
   end
 
   @impl true
   def handle_params(
         %{"workspace_id" => workspace_id, "project_id" => project_id} = params,
-        _,
+        uri,
         socket
       ) do
     response =
@@ -40,8 +40,15 @@ defmodule LoritoWeb.WorkspaceLive.Show do
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:workspace, Workspaces.get_workspace!(%{id: workspace_id, project_id: project_id}))
-     |> assign(:response, response)}
+     |> assign(
+       :workspace,
+       Workspaces.get_workspace_page!(%{id: workspace_id, project_id: project_id})
+     )
+     |> assign(:response, response)
+     |> LoritoWeb.LogPagination.load(params, uri, %{
+       project_id: project_id,
+       workspace_id: workspace_id
+     })}
   end
 
   defp page_title(:show), do: "Show Workspace"
@@ -58,7 +65,8 @@ defmodule LoritoWeb.WorkspaceLive.Show do
       {:ok, _} = Lorito.Workspaces.demote_response_from_rebindings(workspace, response)
     end
 
-    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
+    workspace =
+      Workspaces.get_workspace_page!(%{id: workspace.id, project_id: workspace.project_id})
 
     {:noreply,
      socket
@@ -71,7 +79,7 @@ defmodule LoritoWeb.WorkspaceLive.Show do
     log = Logs.get_log_by_id!(id)
     :ok = Logs.delete_log(log)
 
-    {:noreply, stream_delete(socket, :logs, log)}
+    {:noreply, LoritoWeb.LogPagination.reload(socket)}
   end
 
   @impl true
@@ -82,7 +90,9 @@ defmodule LoritoWeb.WorkspaceLive.Show do
       ) do
     response = Responses.get_response_by_id!(id)
     {:ok, _} = Workspaces.Rebindings.activate_response(workspace, response)
-    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
+
+    workspace =
+      Workspaces.get_workspace_page!(%{id: workspace.id, project_id: workspace.project_id})
 
     {:noreply,
      socket
@@ -101,7 +111,8 @@ defmodule LoritoWeb.WorkspaceLive.Show do
       {:ok, _} = Lorito.Workspaces.promote_response_to_rebinding(workspace, response)
     end
 
-    workspace = Workspaces.get_workspace!(%{id: workspace.id, project_id: workspace.project_id})
+    workspace =
+      Workspaces.get_workspace_page!(%{id: workspace.id, project_id: workspace.project_id})
 
     {:noreply,
      socket
@@ -117,11 +128,7 @@ defmodule LoritoWeb.WorkspaceLive.Show do
         },
         socket
       ) do
-    log = Logs.get_log_by_id!(log.id)
-
-    {:noreply,
-     socket
-     |> stream_insert(:logs, log, at: 0)}
+    {:noreply, LoritoWeb.LogPagination.created(socket, log)}
   end
 
   @impl true

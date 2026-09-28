@@ -47,6 +47,26 @@ defmodule Lorito.Workspaces.Workspace do
       filter expr(id == ^arg(:id) and project_id == ^arg(:project_id))
     end
 
+    read :get_workspace_page do
+      get? true
+      argument :id, :string, allow_nil?: false
+      argument :project_id, :string, allow_nil?: false
+
+      prepare build(
+                load: [
+                  :computed_path,
+                  :displayable_name,
+                  :rebound_routes,
+                  :responses,
+                  :template,
+                  :project,
+                  :full_url
+                ]
+              )
+
+      filter expr(id == ^arg(:id) and project_id == ^arg(:project_id))
+    end
+
     read :get_workspace_by_path do
       get? true
       argument :path, :string, allow_nil?: false

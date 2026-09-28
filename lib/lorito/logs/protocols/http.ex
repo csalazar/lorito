@@ -11,6 +11,11 @@ defmodule Lorito.Logs.HTTP do
   postgres do
     table "http_logs"
     repo Lorito.Repo
+
+    custom_indexes do
+      index [:inserted_at, :id]
+      index [:workspace_id, :inserted_at, :id]
+    end
   end
 
   actions do
