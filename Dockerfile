@@ -56,6 +56,8 @@ RUN mix release
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE}
 
+ARG DNS_BIND_CAPABILITY=false
+
 RUN apt-get update -y && \
   apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -82,12 +84,23 @@ COPY --from=builder --chown=root:root /app/_build/${MIX_ENV}/rel/lorito ./
 # Code is immutable to the runtime user. Only temp files and tzdata are writable.
 RUN chmod -R a+rX,go-w /app
 
+# Fly UDP requires matching internal/external ports. Grant only low-port binding
+# to BEAM for that build; keep the default image compatible with cap_drop: ALL.
+RUN case "$DNS_BIND_CAPABILITY" in \
+      true) apt-get update -y \
+        && apt-get install -y --no-install-recommends libcap2-bin \
+        && setcap 'cap_net_bind_service=ep' /app/erts-*/bin/beam.smp \
+        && getcap /app/erts-*/bin/beam.smp \
+        && apt-get clean && rm -rf /var/lib/apt/lists/* ;; \
+      false) ;; \
+      *) echo "DNS_BIND_CAPABILITY must be true or false" >&2; exit 1 ;; \
+    esac
+
 ENV DNS_PORT=4053 \
     RELEASE_TMP=/tmp/lorito \
     TZDATA_DIR=/var/lib/lorito/tzdata \
     ERL_CRASH_DUMP=/tmp/erl_crash.dump
 
-EXPOSE 4000/tcp 4053/udp
 USER 10001:10001
 
 CMD ["/app/bin/server"]

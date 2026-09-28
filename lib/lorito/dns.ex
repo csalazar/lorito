@@ -70,7 +70,7 @@ defmodule Lorito.DnsServer do
   def init(%{port: port, binding_ip: binding_ip} = server_data) do
     {:ok, socket} = :gen_udp.open(port, [:binary, active: true, ip: binding_ip])
 
-    Logger.debug(
+    Logger.info(
       "DNS server started on port #{port} with binding IP #{:inet.ntoa(binding_ip) |> to_string()}"
     )
 
@@ -133,8 +133,10 @@ defmodule Lorito.DnsServer do
          %DNS.Query{} = query <- List.first(record.qdlist) do
       fqdn = query.domain |> to_string()
 
+      Logger.info("Received DNS query for #{fqdn}")
+
       if LoritoWeb.Utils.is_in_scope?(fqdn) do
-        Logger.debug("Answering DNS query ..")
+        Logger.info("Answering in scope DNS query for #{fqdn}")
         send_dns_response(record, query, ip, wtv, state)
 
         project_id =
@@ -148,7 +150,7 @@ defmodule Lorito.DnsServer do
 
         # Scoped mode keeps only logs associated to a scoped project.
         if not Lorito.Utils.scoped_mode_enabled?() or not is_nil(project_id) do
-          Logger.debug("Logging DNS query ..")
+          Logger.info("Logging DNS query for #{fqdn}")
 
           {:ok, _} =
             Lorito.Logs.create_dns_log(%{

@@ -48,11 +48,21 @@ with this credentials.
 # Optional: DNS setup
 
 In fly.io, UDP services must be declared in your `fly.toml` file.
-Add the following snippet to expose lorito DNS server.
+Fly requires the same internal and external UDP port. Add the build argument
+and environment setting to the existing `[build.args]` and `[env]` sections
+(create `[build.args]` if absent), then add the UDP service below. The build
+argument grants BEAM permission to bind privileged ports while keeping the
+application running as UID `10001`.
 
-```
+```toml
+[build.args]
+  DNS_BIND_CAPABILITY = "true"
+
+[env]
+  DNS_PORT = "53"
+
 [[services]]
-  internal_port = 4053
+  internal_port = 53
   protocol = "udp"
   [[services.ports]]
     port = 53
