@@ -114,14 +114,18 @@ defmodule Lorito.DnsServer do
         Logger.debug("Unsupported DNS query type: #{query.type}")
 
       {:ok, response} ->
-        Socket.Datagram.send!(socket, DNS.Record.encode(response), {ip, wtv})
-        Logger.debug("DNS response sent.")
+        case Socket.Datagram.send(socket, DNS.Record.encode(response), {ip, wtv}) do
+          :ok -> Logger.debug("DNS response sent.")
+          {:error, _reason} -> Logger.warning("Could not send DNS response")
+        end
     end
   end
 
   def get_dns_record(data) do
     try do
       DNS.Record.decode(data)
+    rescue
+      _ -> nil
     catch
       _ -> nil
     end
@@ -130,7 +134,7 @@ defmodule Lorito.DnsServer do
   @impl true
   def handle_info({:udp, _client, ip, wtv, data}, state) do
     with %DNS.Record{} = record <- get_dns_record(data),
-         %DNS.Query{} = query <- List.first(record.qdlist) do
+         %DNS.Query{class: :in} = query <- List.first(record.qdlist) do
       fqdn = query.domain |> to_string()
 
       Logger.info("Received DNS query for #{fqdn}")
@@ -165,5 +169,11 @@ defmodule Lorito.DnsServer do
     end
 
     {:noreply, state}
+  rescue
+    # A bad packet must not consume the application supervisor's restart budget.
+    # Do not include packet contents or exception messages in diagnostics.
+    _ ->
+      Logger.warning("Could not process DNS packet")
+      {:noreply, state}
   end
 end

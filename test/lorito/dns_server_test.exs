@@ -43,6 +43,107 @@ defmodule Lorito.DnsServerTest do
     )
   end
 
+  defp malformed_packets do
+    valid = dns_query_binary("localhost")
+
+    [
+      <<>>,
+      <<0>>,
+      binary_part(valid, 0, 11),
+      binary_part(valid, 0, byte_size(valid) - 1),
+      <<0::16, 0::16, 1::16, 0::48, 0xC0, 12, 1::16, 1::16>>,
+      <<0::16, 0::16, 1::16, 0::48, 0xC0, 255, 1::16, 1::16>>
+    ]
+  end
+
+  test "malformed packets are ignored without logging" do
+    state = fake_state()
+
+    for packet <- malformed_packets() do
+      assert Lorito.DnsServer.get_dns_record(packet) == nil
+
+      assert {:noreply, ^state} =
+               Lorito.DnsServer.handle_info({:udp, nil, {127, 0, 0, 1}, 1234, packet}, state)
+    end
+
+    assert Ash.read!(Lorito.Logs.DNS) == []
+  end
+
+  test "empty questions and unsupported classes are ignored" do
+    state = fake_state()
+    query = %DNS.Query{domain: ~c"localhost", type: :a, class: 65_000}
+    record = %DNS.Record{header: %DNS.Header{}, qdlist: [query]}
+
+    for packet <- [DNS.Record.encode(record), DNS.Record.encode(%{record | qdlist: []})] do
+      assert %DNS.Record{} = Lorito.DnsServer.get_dns_record(packet)
+
+      assert {:noreply, ^state} =
+               Lorito.DnsServer.handle_info({:udp, nil, {127, 0, 0, 1}, 1234, packet}, state)
+    end
+
+    assert Ash.read!(Lorito.Logs.DNS) == []
+  end
+
+  @tag capture_log: true
+  test "response encoding exceptions are contained at the packet boundary" do
+    state = fake_state()
+    packet = dns_query_binary("localhost")
+
+    with_mock DNS.Record, [:passthrough], encode: fn _ -> raise ArgumentError end do
+      assert {:noreply, ^state} =
+               Lorito.DnsServer.handle_info({:udp, nil, {127, 0, 0, 1}, 1234, packet}, state)
+    end
+
+    assert Ash.read!(Lorito.Logs.DNS) == []
+  end
+
+  @tag capture_log: true
+  test "send errors do not crash packet processing" do
+    state = fake_state()
+
+    with_mock Socket.Datagram, send: fn _, _, _ -> {:error, :ehostunreach} end do
+      assert {:noreply, ^state} =
+               Lorito.DnsServer.handle_info(
+                 {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary("localhost")},
+                 state
+               )
+    end
+
+    assert [%{query_name: "localhost"}] = Ash.read!(Lorito.Logs.DNS)
+  end
+
+  test "listener survives repeated malformed packets and answers a valid query" do
+    server_data = %{fake_state().server_data | port: 0, binding_ip: {127, 0, 0, 1}}
+
+    server =
+      start_supervised!(%{
+        id: :isolated_dns,
+        start: {GenServer, :start_link, [Lorito.DnsServer, server_data]},
+        restart: :temporary
+      })
+
+    monitor = Process.monitor(server)
+    {:ok, client} = :gen_udp.open(0, [:binary, active: false, ip: {127, 0, 0, 1}])
+    on_exit(fn -> :gen_udp.close(client) end)
+    {:ok, port} = :inet.port(:sys.get_state(server).socket)
+
+    for _ <- 1..5, packet <- malformed_packets() do
+      :ok = :gen_udp.send(client, {127, 0, 0, 1}, port, packet)
+    end
+
+    :ok = :gen_udp.send(client, {127, 0, 0, 1}, port, dns_query_binary("localhost"))
+    assert {:ok, {_, ^port, response}} = :gen_udp.recv(client, 0, 2_000)
+
+    assert %DNS.Record{anlist: [%DNS.Resource{data: {127, 0, 0, 1}}]} =
+             DNS.Record.decode(response)
+
+    # Synchronize after the response so logging has also finished.
+    assert :sys.get_state(server).socket
+    assert Process.alive?(server)
+    refute_received {:DOWN, ^monitor, :process, ^server, _}
+    assert [%{query_name: "localhost"}] = Ash.read!(Lorito.Logs.DNS)
+  end
+
   describe "when dns is enabled" do
     setup do
       put_settings!(dns_settings())
@@ -83,7 +184,7 @@ defmodule Lorito.DnsServerTest do
       with_mock LoritoWeb.Utils, [:passthrough],
         is_in_scope?: fn _ -> true end,
         get_subdomain: fn _ -> "testproject" end do
-        with_mock Socket.Datagram, send!: fn _, _, _ -> :ok end do
+        with_mock Socket.Datagram, send: fn _, _, _ -> :ok end do
           Lorito.DnsServer.handle_info(
             {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary(fqdn)},
             fake_state()
@@ -116,7 +217,7 @@ defmodule Lorito.DnsServerTest do
       with_mock LoritoWeb.Utils, [:passthrough],
         is_in_scope?: fn _ -> true end,
         get_subdomain: fn _ -> nil end do
-        with_mock Socket.Datagram, send!: fn _, _, _ -> :ok end do
+        with_mock Socket.Datagram, send: fn _, _, _ -> :ok end do
           Lorito.DnsServer.handle_info(
             {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary("lorito.test")},
             fake_state()
@@ -136,7 +237,7 @@ defmodule Lorito.DnsServerTest do
       with_mock LoritoWeb.Utils, [:passthrough],
         is_in_scope?: fn _ -> true end,
         get_subdomain: fn _ -> "testproject" end do
-        with_mock Socket.Datagram, send!: fn _, _, _ -> :ok end do
+        with_mock Socket.Datagram, send: fn _, _, _ -> :ok end do
           Lorito.DnsServer.handle_info(
             {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary("testproject.lorito.test")},
             fake_state()
