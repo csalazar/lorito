@@ -140,7 +140,7 @@ defmodule LoritoWeb.PublicController do
   """
   def get_workspace(path) do
     # Check if the path is a custom path
-    case Workspaces.get_workspace_by_path(path) do
+    case Workspaces.get_workspace_by_path_for_public_request(path) do
       {:ok, workspace} ->
         {:ok, workspace, []}
 
@@ -148,7 +148,10 @@ defmodule LoritoWeb.PublicController do
         with [project_id, workspace_id | route] <- path |> String.split("/"),
              workspace_id <- String.slice(workspace_id, 0, 6),
              {:ok, workspace} <-
-               Workspaces.get_workspace(%{id: workspace_id, project_id: project_id}) do
+               Workspaces.get_workspace_for_public_request(%{
+                 id: workspace_id,
+                 project_id: project_id
+               }) do
           {:ok, workspace, route}
         else
           _ ->
@@ -206,7 +209,13 @@ defmodule LoritoWeb.PublicController do
     conn |> put_status(404) |> json(nil)
   end
 
-  def forward_request({:ok, :workspace, %{workspace: workspace, route: route}}, conn) do
+  def forward_request({:ok, :workspace, %{workspace: identity, route: route}}, conn) do
+    workspace =
+      Workspaces.get_workspace_for_public_response!(%{
+        id: identity.id,
+        project_id: identity.project_id
+      })
+
     {:ok, _} = RequestLogger.log(conn, workspace)
 
     case ResponseHandler.find_response(workspace, route) do

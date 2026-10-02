@@ -28,6 +28,13 @@ defmodule Lorito.Workspaces do
 
   resources do
     resource Lorito.Workspaces.Workspace do
+      define :get_workspace_for_public_request, action: :get_workspace_for_public_request
+      define :get_workspace_for_public_response, action: :get_workspace_for_public_response
+
+      define :get_workspace_by_path_for_public_request,
+        action: :get_workspace_by_path_for_public_request,
+        args: [:path]
+
       define :get_workspace, action: :get_workspace
       define :get_workspace_page, action: :get_workspace_page
       define :get_workspace_by_path, action: :get_workspace_by_path, args: [:path]

@@ -26,6 +26,31 @@ defmodule Lorito.Workspaces.Workspace do
       prepare build(load: [:computed_path, :displayable_name])
     end
 
+    read :get_workspace_for_public_request do
+      get? true
+      argument :id, :string, allow_nil?: false
+      argument :project_id, :string, allow_nil?: false
+
+      filter expr(id == ^arg(:id) and project_id == ^arg(:project_id))
+    end
+
+    read :get_workspace_by_path_for_public_request do
+      get? true
+      argument :path, :string, allow_nil?: false
+
+      filter expr(path == ^arg(:path))
+    end
+
+    read :get_workspace_for_public_response do
+      get? true
+      argument :id, :string, allow_nil?: false
+      argument :project_id, :string, allow_nil?: false
+
+      prepare build(load: [:computed_path, :project, :responses])
+
+      filter expr(id == ^arg(:id) and project_id == ^arg(:project_id))
+    end
+
     read :get_workspace do
       get? true
       argument :id, :string, allow_nil?: false

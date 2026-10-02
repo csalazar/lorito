@@ -51,6 +51,85 @@ defmodule LoritoWeb.PublicControllerTest do
     end
   end
 
+  describe "public workspace lookups" do
+    test "both public paths serve responses without loading historical logs", %{conn: conn} do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user, path: "public-#{project.id}"))
+      configured_response = generate(response(workspace: workspace, actor: user, route: "/"))
+      historical = generate(http_log(workspace_id: workspace.id, project_id: project.id))
+
+      for identity <- [
+            Lorito.Workspaces.get_workspace_for_public_request!(%{
+              id: workspace.id,
+              project_id: project.id
+            }),
+            Lorito.Workspaces.get_workspace_by_path_for_public_request!(workspace.path)
+          ] do
+        assert identity.project_id == project.id
+        assert %Ash.NotLoaded{} = identity.logs
+        assert %Ash.NotLoaded{} = identity.responses
+        assert %Ash.NotLoaded{} = identity.template
+      end
+
+      loaded =
+        Lorito.Workspaces.get_workspace_for_public_response!(%{
+          id: workspace.id,
+          project_id: project.id
+        })
+
+      assert %Ash.NotLoaded{} = loaded.logs
+      assert [%{id: response_id}] = loaded.responses
+      assert response_id == configured_response.id
+
+      for path <- [
+            "/#{project.id}/#{workspace.id}",
+            "/#{workspace.path}"
+          ] do
+        response = get(conn, path)
+        assert response.status == configured_response.status
+
+        assert Phoenix.ConnTest.response(response, configured_response.status) ==
+                 configured_response.body
+      end
+
+      logs = Ash.read!(Lorito.Logs.HTTP)
+      assert length(logs) == 3
+      assert Enum.any?(logs, &(&1.id == historical.id))
+    end
+
+    test "denied workspace requests do not load response data or create logs", %{conn: conn} do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user, path: "public-#{project.id}"))
+      generate(response(workspace: workspace, actor: user, route: "hello"))
+      historical = generate(http_log(workspace_id: workspace.id, project_id: project.id))
+
+      rate_key = "project_#{project.id}"
+
+      with_mock Lorito.Workspaces, [:passthrough],
+        get_workspace_for_public_response!: fn _ ->
+          flunk("loaded responses after rate denial")
+        end do
+        with_mock LoritoWeb.RateLimit,
+          hit: fn key, scale, limit ->
+            send(self(), {:rate_limit_hit, key, scale, limit})
+            {:deny, limit}
+          end do
+          for path <- ["/#{project.id}/#{workspace.id}/hello", "/#{workspace.path}"] do
+            assert get(conn, path) |> json_response(429) == nil
+            assert_received {:rate_limit_hit, ^rate_key, _, 20}
+          end
+        end
+
+        assert_not_called(Lorito.Workspaces.get_workspace_for_public_response!(:_))
+      end
+
+      assert [%{id: log_id}] = Ash.read!(Lorito.Logs.HTTP)
+      assert log_id == historical.id
+    end
+  end
+
   describe "catch-all logging with scoped mode" do
     test "unscoped catch-all request logs when scoped mode is disabled", %{conn: conn} do
       put_scoped_mode!(false)
