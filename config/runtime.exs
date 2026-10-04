@@ -33,11 +33,45 @@ if System.get_env("PHX_SERVER") do
 end
 
 if config_env() == :prod do
+  database_url = System.fetch_env!("DATABASE_URL")
+
+  database_query = URI.parse(database_url).query || ""
+
+  if Enum.any?(URI.query_decoder(database_query), fn
+       {"ssl", "true"} -> false
+       {"ssl", _} -> true
+       {"ssl_opts", _} -> true
+       _ -> false
+     end) do
+    raise ArgumentError, "DATABASE_URL must not override database TLS options"
+  end
+
+  database_ssl_options =
+    case {System.get_env("DATABASE_SSL_VERIFY"), System.get_env("DATABASE_SSL_CA_FILE")} do
+      {verify, nil} when verify in [nil, "true"] ->
+        true
+
+      {"false", nil} ->
+        [verify: :verify_none]
+
+      {"false", _} ->
+        raise ArgumentError, "DATABASE_SSL_CA_FILE cannot be used when verification is disabled"
+
+      {verify, ca_file} when verify in [nil, "true"] ->
+        if String.trim(ca_file) == "" do
+          raise ArgumentError, "DATABASE_SSL_CA_FILE must not be empty"
+        end
+
+        [cacertfile: ca_file]
+
+      _ ->
+        raise ArgumentError, "DATABASE_SSL_VERIFY must be true or false"
+    end
+
   config :lorito, Lorito.Repo,
     start_apps_before_migration: [:ssl],
-    url: System.fetch_env!("DATABASE_URL"),
-    ssl: true,
-    ssl_opts: [verify: :verify_none],
+    url: database_url,
+    ssl: database_ssl_options,
     pool_size: 10,
     queue_target: 10_000
 

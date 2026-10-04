@@ -54,6 +54,14 @@ lorito needs two secrets (environment variables) to work:
 - `DATABASE_URL`: postgres connection URI of your database
 - `SECRET_KEY_BASE`: the secret key to sign cryptographic material such as session tokens
 
+Database TLS verifies the server certificate and hostname by default. If your
+database uses a private CA, mount its PEM certificate in the application
+container and set `DATABASE_SSL_CA_FILE` to the readable absolute path. This
+keeps verification enabled and trusts that CA for the database connection.
+For a database whose certificate cannot be verified, you can explicitly set
+`DATABASE_SSL_VERIFY=false`; TLS remains encrypted, but database identity is
+not checked.
+
 ### Using docker-compose
 
 You can use [docker-compose](https://docs.docker.com/compose/) to run lorito

@@ -24,6 +24,36 @@ To set the secret enter the following command:
 
 `flyctl secrets set DATABASE_URL=postgres://...`
 
+### Using a private database CA
+
+If your database uses a private CA, download its PEM certificate
+and configure the application to verify the database with it.
+Add the path to the existing `[env]` section of your instance's `fly.toml`
+(or create that section) and add a `[[files]]` entry:
+
+```toml
+[env]
+  DATABASE_SSL_CA_FILE = "/tmp/lorito-db-ca.pem"
+
+[[files]]
+  guest_path = "/tmp/lorito-db-ca.pem"
+  secret_name = "DATABASE_CA_CERT"
+```
+
+Fly requires a base64-encoded secret for `[[files]]` and writes its decoded
+contents to `guest_path` when the Machine starts. Stage both the certificate
+and verified mode before deploying, so existing Machines do not restart before
+the file mapping is present:
+
+```sh
+flyctl secrets set --stage DATABASE_CA_CERT="$(base64 < /path/to/team-ca.pem | tr -d '\n')" DATABASE_SSL_VERIFY=true
+flyctl deploy
+```
+
+Postgrex reads the file when connecting, so it must be readable by the
+application (UID 10001). The hostname in `DATABASE_URL` must match the database
+certificate. Do not set `DATABASE_SSL_VERIFY=false` with `DATABASE_SSL_CA_FILE`.
+
 ### Deploying
 
 `flyctl deploy` deploys two instances by default.
