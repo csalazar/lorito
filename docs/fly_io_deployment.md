@@ -8,7 +8,7 @@ Run the following command to create your `fly.toml` file:
 
 Then, change the following lines in `fly.toml`:
 
-* `force_https` from `true` to `false` to receive also HTTP requests
+* `force_https` from `true` to `false` so public payload URLs can receive HTTP requests. Lorito redirects dashboard and LiveView requests to HTTPS and issues a Secure production session cookie.
 * `min_machines_running` from `0` to `1` to have a permanent instance
 * add `swap_size_mb = 512` below `kill_signal` to avoid OOM issues
 
