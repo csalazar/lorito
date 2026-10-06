@@ -179,17 +179,13 @@ defmodule Lorito.DnsServerTest do
       user = generate(user())
       project = generate(project(subdomain: "testproject", actor: user))
 
-      fqdn = "testproject.lorito.test"
+      fqdn = "testproject.localhost"
 
-      with_mock LoritoWeb.Utils, [:passthrough],
-        is_in_scope?: fn _ -> true end,
-        get_subdomain: fn _ -> "testproject" end do
-        with_mock Socket.Datagram, send: fn _, _, _ -> :ok end do
-          Lorito.DnsServer.handle_info(
-            {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary(fqdn)},
-            fake_state()
-          )
-        end
+      with_mock Socket.Datagram, send: fn _, _, _ -> :ok end do
+        Lorito.DnsServer.handle_info(
+          {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary(fqdn)},
+          fake_state()
+        )
       end
 
       dns_logs = Ash.read!(Lorito.Logs.DNS)
@@ -206,6 +202,18 @@ defmodule Lorito.DnsServerTest do
           {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary("other.domain.com")},
           fake_state()
         )
+      end
+
+      assert Ash.read!(Lorito.Logs.DNS) == []
+    end
+
+    test "does not answer or log a name that merely ends with the server host" do
+      with_mock Socket.Datagram, send: fn _, _, _ -> flunk("answered an out-of-scope name") end do
+        assert {:noreply, _} =
+                 Lorito.DnsServer.handle_info(
+                   {:udp, nil, {127, 0, 0, 1}, 1234, dns_query_binary("notlocalhost")},
+                   fake_state()
+                 )
       end
 
       assert Ash.read!(Lorito.Logs.DNS) == []

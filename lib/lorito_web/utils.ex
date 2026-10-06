@@ -61,7 +61,7 @@ defmodule LoritoWeb.Utils do
       |> URI.parse()
       |> Map.get(:host)
 
-    String.ends_with?(fqdn, server_host)
+    fqdn == server_host or String.ends_with?(fqdn, ".#{server_host}")
   end
 end
 

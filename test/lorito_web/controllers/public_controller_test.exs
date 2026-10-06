@@ -183,5 +183,13 @@ defmodule LoritoWeb.PublicControllerTest do
 
       assert Lorito.Logs.list_logs!(%{scoped_logs: false}) == []
     end
+
+    test "host that merely ends with the server host is rejected" do
+      conn = Phoenix.ConnTest.build_conn(:get, "http://notlocalhost")
+      conn = get(conn, "/some/path")
+
+      assert json_response(conn, 404) == nil
+      assert Lorito.Logs.list_logs!(%{scoped_logs: false}) == []
+    end
   end
 end
