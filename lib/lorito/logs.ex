@@ -24,7 +24,7 @@ defmodule Lorito.Logs do
         :project,
         :workspace,
         :implementation,
-        http_details: [:host, :ip, :method, :url],
+        http_details: [:host, :ip, :method, :url, :error],
         dns_details: [:host]
       ]
     end
@@ -65,15 +65,31 @@ defmodule Lorito.Logs do
   end
 
   def gather_log_attributes(conn) do
-    {:ok, body, _conn} = Plug.Conn.read_body(conn)
+    {outcome, conn} =
+      case LoritoWeb.Plugs.CaptureBody.finish(conn) do
+        {:ok, conn} -> {:ok, conn}
+        {:read_error, _reason, conn} -> {:read_error, conn}
+      end
 
-    %{
+    body = LoritoWeb.Plugs.CaptureBody.captured_body(conn)
+
+    {body, encoding} =
+      if String.valid?(body) and :binary.match(body, <<0>>) == :nomatch do
+        {body, "utf-8"}
+      else
+        {Base.encode64(body), "base64"}
+      end
+
+    attributes = %{
       ip: RequestParser.get_ip(conn),
       method: conn.method,
       url: RequestParser.get_url(conn),
       headers: RequestParser.get_headers(conn),
       body: body,
+      body_encoding: encoding,
       params: RequestParser.get_params(conn)
     }
+
+    {outcome, attributes, conn}
   end
 end

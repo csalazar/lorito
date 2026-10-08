@@ -28,6 +28,7 @@
   <:item title="IP">{@log.ip}</:item>
   <:item title="Method">{@log.method}</:item>
   <:item title="Url">{@log.url}</:item>
+  <:item :if={@log.error} title="Capture error">{@log.error}</:item>
   <:item title="Headers">
     <table class="table w-full">
       <thead>
@@ -77,7 +78,10 @@
       </tbody>
     </table>
   </:item>
-  <:item title="Body">{@log.body}</:item>
+  <:item title="Body">
+    <span :if={@log.body_encoding == "base64"}>Base64-encoded binary data:</span>
+    {@log.body}
+  </:item>
 </.list>
 <.list :if={@protocol == :dns}>
   <:item title="IP">{@log.ip}</:item>

@@ -32,8 +32,10 @@ defmodule LoritoWeb.Endpoint do
 
   plug Plug.RequestId
 
-  plug Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
+  plug LoritoWeb.Plugs.CaptureBody
+
+  plug LoritoWeb.Plugs.ResilientParsers,
+    parsers: [:urlencoded, :multipart, LoritoWeb.Parsers.JSON],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
 
@@ -45,4 +47,11 @@ defmodule LoritoWeb.Endpoint do
 
   plug LoritoWeb.Plugs.FetchRemoteIp
   plug LoritoWeb.Router
+
+  @impl Plug
+  def call(conn, opts) do
+    conn
+    |> super(opts)
+    |> LoritoWeb.Plugs.CaptureBody.unwrap()
+  end
 end

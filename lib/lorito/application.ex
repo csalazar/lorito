@@ -12,6 +12,8 @@ defmodule Lorito.Application do
       Lorito.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: Lorito.PubSub},
+      {Task.Supervisor, name: Lorito.TransportErrorTaskSupervisor},
+      LoritoWeb.TransportErrorLogger,
       # Start the Endpoint (http/https)
       LoritoWeb.Endpoint,
       LoritoWeb.RateLimit,

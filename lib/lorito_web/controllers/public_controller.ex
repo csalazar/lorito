@@ -10,28 +10,36 @@ alias Lorito.Utils.RequestParser
 
 defmodule RequestLogger do
   def log(conn, %Workspace{} = workspace) do
-    conn
-    |> Logs.gather_log_attributes()
-    |> Map.put(:workspace_id, workspace.id)
-    |> Map.put(:project_id, workspace.project_id)
-    |> Logs.create_http_log()
+    {outcome, attributes, conn} = Logs.gather_log_attributes(conn)
+
+    {:ok, _} =
+      attributes
+      |> Map.put(:workspace_id, workspace.id)
+      |> Map.put(:project_id, workspace.project_id)
+      |> Logs.create_http_log()
+
+    {outcome, conn}
   end
 
   def log(conn, %Project{} = project) do
-    conn
-    |> Logs.gather_log_attributes()
-    |> Map.put(:project_id, project.id)
-    |> Logs.create_http_log()
+    {outcome, attributes, conn} = Logs.gather_log_attributes(conn)
+
+    {:ok, _} =
+      attributes
+      |> Map.put(:project_id, project.id)
+      |> Logs.create_http_log()
+
+    {outcome, conn}
   end
 
   def log(conn) do
-    attributes =
-      conn
-      |> Logs.gather_log_attributes()
+    {outcome, attributes, conn} = Logs.gather_log_attributes(conn)
 
     if not RequestParser.is_internal_request(attributes) do
       {:ok, _} = Logs.create_http_log(attributes)
     end
+
+    {outcome, conn}
   end
 end
 
@@ -196,17 +204,16 @@ defmodule LoritoWeb.PublicController do
   end
 
   def forward_request({:ok, :catch_all}, conn) do
-    with subdomain when not is_nil(subdomain) <- LoritoWeb.Utils.get_subdomain(conn.host),
-         {:ok, project} <- Projects.get_project_by_subdomain(subdomain) do
-      RequestLogger.log(conn, project)
-    else
-      _ ->
-        if not Lorito.Utils.scoped_mode_enabled?() do
-          RequestLogger.log(conn)
-        end
-    end
+    result =
+      with subdomain when not is_nil(subdomain) <- LoritoWeb.Utils.get_subdomain(conn.host),
+           {:ok, project} <- Projects.get_project_by_subdomain(subdomain) do
+        RequestLogger.log(conn, project)
+      else
+        _ ->
+          if Lorito.Utils.scoped_mode_enabled?(), do: {:ok, conn}, else: RequestLogger.log(conn)
+      end
 
-    conn |> put_status(404) |> json(nil)
+    respond_after_capture(result, 404)
   end
 
   def forward_request({:ok, :workspace, %{workspace: identity, route: route}}, conn) do
@@ -216,21 +223,30 @@ defmodule LoritoWeb.PublicController do
         project_id: identity.project_id
       })
 
-    {:ok, _} = RequestLogger.log(conn, workspace)
+    case RequestLogger.log(conn, workspace) do
+      {:ok, conn} ->
+        case ResponseHandler.find_response(workspace, route) do
+          {:ok, response} ->
+            %{status: status, body: body, headers: headers} =
+              ResponseHandler.prepare_response_data(response, workspace)
 
-    case ResponseHandler.find_response(workspace, route) do
-      {:ok, response} ->
-        %{status: status, body: body, headers: headers} =
-          ResponseHandler.prepare_response_data(response, workspace)
+            conn
+            |> resp(status, body)
+            |> merge_resp_headers(headers)
 
-        conn
-        |> resp(status, body)
-        |> merge_resp_headers(headers)
+          {:not_found, _} ->
+            conn |> put_status(404) |> json(nil)
+        end
 
-      {:not_found, _} ->
-        conn |> put_status(404) |> json(nil)
+      result ->
+        respond_after_capture(result, 404)
     end
   end
+
+  defp respond_after_capture({:ok, conn}, status), do: conn |> put_status(status) |> json(nil)
+
+  defp respond_after_capture({:read_error, conn}, _),
+    do: conn |> put_status(408) |> json(nil)
 
   @doc """
   Main entrypoint for handling requests.

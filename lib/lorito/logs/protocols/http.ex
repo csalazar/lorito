@@ -20,7 +20,19 @@ defmodule Lorito.Logs.HTTP do
 
   actions do
     defaults [:destroy]
-    default_accept [:ip, :method, :url, :headers, :body, :params, :workspace_id, :project_id]
+
+    default_accept [
+      :ip,
+      :method,
+      :url,
+      :headers,
+      :body,
+      :body_encoding,
+      :error,
+      :params,
+      :workspace_id,
+      :project_id
+    ]
 
     create :create do
       primary? true
@@ -47,7 +59,9 @@ defmodule Lorito.Logs.HTTP do
     attribute :method, :string, allow_nil?: false
     attribute :url, :string, allow_nil?: false
     attribute :headers, {:array, {:array, :string}}, default: []
-    attribute :body, :string, default: ""
+    attribute :body, :string, default: "", constraints: [trim?: false, allow_empty?: true]
+    attribute :body_encoding, :string, allow_nil?: false, default: "utf-8"
+    attribute :error, :string
     attribute :params, :map, default: %{}
 
     timestamps()

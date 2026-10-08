@@ -32,8 +32,16 @@ defmodule Lorito.Utils.RequestParser do
   def get_params(%{params: params}) do
     params
     |> Enum.reject(fn {k, _v} -> k in ["project_id", "route", "revision"] end)
-    |> Enum.into(%{})
+    |> Map.new(fn {key, value} -> {key, loggable_param(value)} end)
   end
+
+  defp loggable_param(%Plug.Upload{filename: filename, content_type: content_type}) do
+    %{"filename" => filename, "content_type" => content_type}
+  end
+
+  defp loggable_param(%{} = values), do: Map.new(values, fn {k, v} -> {k, loggable_param(v)} end)
+  defp loggable_param(values) when is_list(values), do: Enum.map(values, &loggable_param/1)
+  defp loggable_param(value), do: value
 
   @doc """
   Return true if the request was made by the logged in user.

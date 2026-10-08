@@ -202,7 +202,7 @@ defmodule LoritoWeb.McpTest do
   test "logs serialize both protocols, accept ISO timestamps and delete through MCP", %{
     token: token
   } do
-    http = generate(http_log(headers: [["host", "example.test"]]))
+    http = generate(http_log(headers: [["host", "example.test"]], error: "capture failed"))
     dns = generate(dns_log())
 
     logs =
@@ -215,6 +215,7 @@ defmodule LoritoWeb.McpTest do
     dns_result = Enum.find(logs, &(&1["id"] == dns.id))
     assert http_result["http_details"]["host"] == "example.test"
     assert http_result["http_details"]["method"] == "GET"
+    assert http_result["http_details"]["error"] == "capture failed"
     assert dns_result["dns_details"]["host"] == dns.query_name
 
     for log <- [http, dns] do

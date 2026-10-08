@@ -83,6 +83,8 @@ defmodule Lorito.Test.Generators do
         url: "https://example.com/test",
         headers: [],
         body: "",
+        body_encoding: "utf-8",
+        error: nil,
         params: %{},
         workspace_id: opts[:workspace_id],
         project_id: opts[:project_id]

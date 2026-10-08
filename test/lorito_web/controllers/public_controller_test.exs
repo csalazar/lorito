@@ -52,6 +52,281 @@ defmodule LoritoWeb.PublicControllerTest do
   end
 
   describe "public workspace lookups" do
+    test "stores raw JSON and URL-encoded bodies while preserving parsed params" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      generate(response(workspace: workspace, actor: user, route: "/"))
+      path = "/#{project.id}/#{workspace.id}"
+
+      for {content_type, body} <- [
+            {"application/json", ~s({"event":"callback"})},
+            {"application/x-www-form-urlencoded", "event=callback"}
+          ] do
+        conn =
+          Phoenix.ConnTest.build_conn(:post, "http://localhost")
+          |> Plug.Conn.put_req_header("content-type", content_type)
+          |> post(path, body)
+
+        assert conn.status == 200
+      end
+
+      logs = Ash.read!(Lorito.Logs.HTTP)
+      assert length(logs) == 2
+
+      for log <- logs do
+        assert log.body in [~s({"event":"callback"}), "event=callback"]
+        assert log.params == %{"event" => "callback"}
+        assert log.body_encoding == "utf-8"
+      end
+    end
+
+    test "malformed JSON payloads are served and logged without crashing the request" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      configured_response = generate(response(workspace: workspace, actor: user, route: "/"))
+      path = "/#{project.id}/#{workspace.id}"
+
+      payloads = [
+        {"application/json", "{"},
+        {"application/json", ~s({"unterminated":")},
+        {"application/problem+json", <<255, 254, 0>>}
+      ]
+
+      for {content_type, body} <- payloads do
+        conn =
+          Phoenix.ConnTest.build_conn(:post, "http://localhost")
+          |> Plug.Conn.put_req_header("content-type", content_type)
+          |> post(path, body)
+
+        assert conn.status == 200
+        assert response(conn, 200) == configured_response.body
+      end
+
+      logs = Ash.read!(Lorito.Logs.HTTP)
+      assert length(logs) == length(payloads)
+
+      assert Enum.sort(
+               Enum.map(logs, fn log ->
+                 assert log.params == %{}
+
+                 case log.body_encoding do
+                   "utf-8" -> log.body
+                   "base64" -> Base.decode64!(log.body)
+                 end
+               end)
+             ) == Enum.sort(Enum.map(payloads, &elem(&1, 1)))
+    end
+
+    test "valid scalar JSON and unusual URL encoding remain loggable" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      generate(response(workspace: workspace, actor: user, route: "/"))
+      path = "/#{project.id}/#{workspace.id}"
+
+      for {content_type, body} <- [
+            {"application/json", "1"},
+            {"application/x-www-form-urlencoded", "a=%"}
+          ] do
+        conn =
+          Phoenix.ConnTest.build_conn(:post, "http://localhost")
+          |> Plug.Conn.put_req_header("content-type", content_type)
+          |> post(path, body)
+
+        assert conn.status == 200
+      end
+
+      logs = Ash.read!(Lorito.Logs.HTTP)
+      assert Enum.any?(logs, &(&1.body == "1" and &1.params == %{"_json" => 1}))
+      assert Enum.any?(logs, &(&1.body == "a=%" and &1.params == %{"a" => "%"}))
+    end
+
+    test "parser errors fall back to raw request logging" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      configured_response = generate(response(workspace: workspace, actor: user, route: "*"))
+      path = "/#{project.id}/#{workspace.id}"
+
+      deep_form = "a" <> String.duplicate("[x]", 200) <> "=1"
+
+      malformed_requests = [
+        {:post, "application/x-www-form-urlencoded", <<"a=", 255>>},
+        {:patch, "application/x-www-form-urlencoded", <<"a=", 255>>},
+        {:post, "application/x-www-form-urlencoded", deep_form},
+        {:post, "multipart/form-data; boundary=fuzz",
+         "--fuzz\r\nContent-Disposition: form-data; name=\"x\"\r\n\r\nvalue"},
+        {:post, "multipart/form-data; boundary=fuzz",
+         <<"--fuzz\r\nContent-Disposition: form-data; name=\"x\"\r\n\r\n", 255,
+           "\r\n--fuzz--\r\n">>}
+      ]
+
+      for {method, content_type, body} <- malformed_requests do
+        conn =
+          Phoenix.ConnTest.build_conn(:get, "http://localhost")
+          |> Plug.Conn.put_req_header("content-type", content_type)
+          |> dispatch(@endpoint, method, path, body)
+
+        assert conn.status == configured_response.status
+      end
+
+      invalid_query_conn =
+        Phoenix.ConnTest.build_conn(:get, "http://localhost")
+        |> get(path <> "?q=%FF")
+
+      assert invalid_query_conn.status == configured_response.status
+
+      logs = Ash.read!(Lorito.Logs.HTTP)
+      assert length(logs) == length(malformed_requests) + 1
+      assert Enum.all?(logs, &(&1.params == %{}))
+
+      logged_bodies =
+        Enum.map(logs, fn log ->
+          case log.body_encoding do
+            "utf-8" -> log.body
+            "base64" -> Base.decode64!(log.body)
+          end
+        end)
+
+      for {_method, _content_type, body} <- malformed_requests do
+        assert body in logged_bodies
+      end
+
+      assert Enum.any?(logs, &(&1.url == path <> "?q=%FF"))
+    end
+
+    @tag timeout: 30_000
+    test "multipart bodies beyond Plug's parser limit are still logged in full" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      configured_response = generate(response(workspace: workspace, actor: user, route: "/"))
+      path = "/#{project.id}/#{workspace.id}"
+
+      body =
+        "--fuzz\r\nContent-Disposition: form-data; name=\"x\"\r\n\r\n" <>
+          String.duplicate("x", 8_000_001) <> "\r\n--fuzz--\r\n"
+
+      conn =
+        Phoenix.ConnTest.build_conn(:post, "http://localhost")
+        |> Plug.Conn.put_req_header("content-type", "multipart/form-data; boundary=fuzz")
+        |> post(path, body)
+
+      assert conn.status == configured_response.status
+      assert [%{body: ^body, params: %{}}] = Ash.read!(Lorito.Logs.HTTP)
+    end
+
+    test "unusual but valid HTTP inputs are served and logged" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      generate(response(workspace: workspace, actor: user, route: "*"))
+      base_path = "/#{project.id}/#{workspace.id}"
+
+      requests = [
+        {:request, "BREW", base_path, ""},
+        {:get, nil, base_path <> "/%00", ""},
+        {:get, nil, base_path <> "/%ZZ", ""},
+        {:get, nil, base_path <> "?x=1&x=2&x[y]=3", ""},
+        {:post, nil, base_path, <<0, 255, 254, 65>>}
+      ]
+
+      for {kind, method, path, body} <- requests do
+        request_method = if kind == :request, do: method, else: kind
+
+        conn =
+          Phoenix.ConnTest.build_conn(:get, "http://localhost")
+          |> Plug.Conn.put_req_header("content-type", "text/plain")
+
+        conn = dispatch(conn, @endpoint, request_method, path, body)
+
+        assert conn.status == 200
+      end
+
+      logs = Ash.read!(Lorito.Logs.HTTP)
+      assert length(logs) == length(requests)
+      assert Enum.any?(logs, &(&1.method == "BREW"))
+      assert Enum.any?(logs, &(&1.url == base_path <> "/%00"))
+      assert Enum.any?(logs, &(&1.url == base_path <> "/%ZZ"))
+
+      assert Enum.any?(logs, fn log ->
+               log.body_encoding == "base64" and Base.decode64!(log.body) == <<0, 255, 254, 65>>
+             end)
+    end
+
+    test "stores a multipart body including file bytes" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      generate(response(workspace: workspace, actor: user, route: "/"))
+
+      body =
+        "--capture-boundary\r\n" <>
+          "Content-Disposition: form-data; name=\"note\"\r\n\r\nhello\r\n" <>
+          "--capture-boundary\r\n" <>
+          "Content-Disposition: form-data; name=\"file\"; filename=\"probe.txt\"\r\n" <>
+          "Content-Type: text/plain\r\n\r\nfile bytes\r\n" <>
+          "--capture-boundary--\r\n"
+
+      conn =
+        Phoenix.ConnTest.build_conn(:post, "http://localhost")
+        |> Plug.Conn.put_req_header(
+          "content-type",
+          "multipart/form-data; boundary=capture-boundary"
+        )
+        |> post("/#{project.id}/#{workspace.id}", body)
+
+      assert conn.status == 200
+      assert [%{body: ^body} = log] = Ash.read!(Lorito.Logs.HTTP)
+      assert log.params["note"] == "hello"
+    end
+
+    test "stores a large pass-through body in full" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      generate(response(workspace: workspace, actor: user, route: "/"))
+      body = String.duplicate("x", 8_000_001)
+
+      conn =
+        Phoenix.ConnTest.build_conn(:post, "http://localhost")
+        |> Plug.Conn.put_req_header("content-type", "text/plain")
+        |> post("/#{project.id}/#{workspace.id}", body)
+
+      assert conn.status == 200
+      assert [%{body: ^body}] = Ash.read!(Lorito.Logs.HTTP)
+    end
+
+    test "stores binary pass-through bytes including NUL without loss" do
+      user = generate(user())
+      project = generate(project(actor: user))
+      workspace = generate(workspace(project: project, actor: user))
+      generate(response(workspace: workspace, actor: user, route: "/"))
+
+      bodies = [<<0>>, <<0, 255, 254, 65>>, :binary.copy(<<0, 255, 254, 65>>, 300_000)]
+
+      for body <- bodies do
+        conn =
+          Phoenix.ConnTest.build_conn(:post, "http://localhost")
+          |> Plug.Conn.put_req_header("content-type", "application/octet-stream")
+          |> post("/#{project.id}/#{workspace.id}", body)
+
+        assert conn.status == 200
+      end
+
+      assert logs = Ash.read!(Lorito.Logs.HTTP)
+      assert length(logs) == length(bodies)
+
+      assert Enum.sort(
+               Enum.map(logs, fn log ->
+                 assert log.body_encoding == "base64"
+                 Base.decode64!(log.body)
+               end)
+             ) == Enum.sort(bodies)
+    end
+
     test "both public paths serve responses without loading historical logs", %{conn: conn} do
       user = generate(user())
       project = generate(project(actor: user))
