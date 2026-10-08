@@ -82,6 +82,14 @@
   <:item title="Body size">
     <span id="body-size" title={"#{@body_size} bytes"}>{LoritoWeb.Utils.format_bytes(@body_size)}</span>
   </:item>
+  <:item :if={@recovered_files != []} title="Uploaded files">
+    <div :for={file <- @recovered_files} class="mb-2 whitespace-normal break-all">
+      <span>{file.filename} ({file.field}) — {LoritoWeb.Utils.format_bytes(file.size)} — {file.content_type}</span>
+      <.link href={~p"/_lorito/logs/#{@log.id}/uploads/#{file.index}"} class="btn btn-sm ml-2">
+        Download file
+      </.link>
+    </div>
+  </:item>
   <:item
     title="Body"
     badges={

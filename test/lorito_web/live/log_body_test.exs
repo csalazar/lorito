@@ -80,4 +80,88 @@ defmodule LoritoWeb.LogBodyTest do
   test "missing logs return 404", %{conn: conn} do
     assert get(conn, "/_lorito/logs/#{Ash.UUID.generate()}/body") |> response(404) == "Not found"
   end
+
+  defp upload_log do
+    bytes = <<0, 255, 254, 65>>
+
+    body =
+      "--files\r\nContent-Disposition: form-data; name=\"note\"\r\n\r\nhello\r\n" <>
+        "--files\r\nContent-Disposition: form-data; name=\"file\"; filename=\"../binary.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n" <>
+        bytes <>
+        "\r\n--files\r\nContent-Disposition: form-data; name=\"file\"; filename=\"empty.txt\"\r\n\r\n\r\n--files--\r\n"
+
+    {generate(
+       http_log(
+         body: Base.encode64(body),
+         body_encoding: "base64",
+         headers: [["content-type", "multipart/form-data; boundary=\"files\""]]
+       )
+     ), bytes}
+  end
+
+  test "recovers repeated file fields and downloads binary and empty files", %{conn: conn} do
+    {log, bytes} = upload_log()
+    {:ok, view, _} = live(conn, "/_lorito/logs/#{log.id}")
+    assert has_element?(view, "a[href='/_lorito/logs/#{log.id}/uploads/1']", "Download file")
+    assert has_element?(view, "a[href='/_lorito/logs/#{log.id}/uploads/2']", "Download file")
+    assert render(view) =~ "empty.txt"
+
+    download = get(conn, "/_lorito/logs/#{log.id}/uploads/1")
+    assert response(download, 200) == bytes
+    disposition = Plug.Conn.get_resp_header(download, "content-disposition") |> hd()
+    assert disposition =~ "binary.bin"
+    refute disposition =~ "../"
+    assert get(conn, "/_lorito/logs/#{log.id}/uploads/2") |> response(200) == ""
+    assert get(conn, "/_lorito/logs/#{log.id}/uploads/99") |> response(404) == "Not found"
+    assert get(conn, "/_lorito/logs/#{log.id}/uploads/invalid") |> response(404) == "Not found"
+
+    assert get(build_conn(), "/_lorito/logs/#{log.id}/uploads/1") |> redirected_to() ==
+             "/_lorito/sign-in"
+  end
+
+  test "removes Unicode formatting controls from recovered filenames", %{conn: conn} do
+    deceptive_name = "invoice\u202Efdp.exe"
+    zero_width_name = "résumé\u200B📄.txt"
+
+    body =
+      "--files\r\nContent-Disposition: form-data; name=\"file\"; filename=\"#{deceptive_name}\"\r\n\r\nfirst\r\n" <>
+        "--files\r\nContent-Disposition: form-data; name=\"file\"; filename=\"#{zero_width_name}\"\r\n\r\nsecond\r\n--files--\r\n"
+
+    log =
+      generate(
+        http_log(
+          body: body,
+          headers: [["content-type", "multipart/form-data; boundary=files"]]
+        )
+      )
+
+    {:ok, view, _} = live(conn, "/_lorito/logs/#{log.id}")
+    html = render(view)
+
+    assert html =~ "invoicefdp.exe"
+    assert html =~ "résumé📄.txt"
+    refute has_element?(view, "span", deceptive_name)
+    refute has_element?(view, "span", zero_width_name)
+
+    download = get(conn, "/_lorito/logs/#{log.id}/uploads/0")
+    disposition = Plug.Conn.get_resp_header(download, "content-disposition") |> hd()
+    assert response(download, 200) == "first"
+    assert disposition =~ "invoicefdp.exe"
+    refute disposition =~ "%E2%80%AE"
+  end
+
+  test "incomplete uploads do not break the view or offer partial file downloads", %{conn: conn} do
+    log =
+      generate(
+        http_log(
+          body:
+            "--files\r\nContent-Disposition: form-data; name=\"file\"; filename=\"partial.txt\"\r\n\r\nunfinished",
+          headers: [["content-type", "multipart/form-data; boundary=files"]]
+        )
+      )
+
+    {:ok, view, _} = live(conn, "/_lorito/logs/#{log.id}")
+    refute has_element?(view, "a[href*='/uploads/']")
+    assert get(conn, "/_lorito/logs/#{log.id}/uploads/0") |> response(404) == "Not found"
+  end
 end

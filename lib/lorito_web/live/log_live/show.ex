@@ -18,11 +18,22 @@ defmodule LoritoWeb.LogLive.Show do
     preview = binary_part(body, 0, min(byte_size(body), @preview_bytes))
     preview = trim_incomplete_utf8(preview)
 
+    uploads =
+      if log.protocol == :http do
+        case Lorito.Utils.UploadRecovery.list(record) do
+          {:ok, files} -> files
+          _ -> []
+        end
+      else
+        []
+      end
+
     {:noreply,
      socket
      |> assign(:page_title, "Show Log")
      |> assign(:log, if(log.protocol == :http, do: %{record | body: ""}, else: record))
      |> assign(:body_preview, preview)
+     |> assign(:recovered_files, uploads)
      |> assign(:body_size, payload_size(body, Map.get(record, :body_encoding)))
      |> assign(:body_truncated, byte_size(preview) < byte_size(body))
      |> assign(:protocol, log.protocol)

@@ -109,6 +109,7 @@ defmodule LoritoWeb.Router do
     pipe_through [:browser, :authenticated]
 
     get "/logs/:id/body", LogBodyController, :show
+    get "/logs/:id/uploads/:index", LogBodyController, :upload
   end
 
   scope "/_lorito/mcp" do
