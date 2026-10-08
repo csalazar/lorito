@@ -28,9 +28,10 @@
   <:item title="IP">{@log.ip}</:item>
   <:item title="Method">{@log.method}</:item>
   <:item title="Url">{@log.url}</:item>
-  <:item :if={@log.error} title="Capture error">{@log.error}</:item>
+  <:item :if={@log.error} title="Capture error" error_status={true}>{@log.error}</:item>
   <:item title="Headers">
-    <table class="table w-full">
+    <span :if={@log.headers == []}>-</span>
+    <table :if={@log.headers != []} class="table w-full">
       <thead>
         <tr>
           <th>Name</th>
@@ -78,9 +79,33 @@
       </tbody>
     </table>
   </:item>
-  <:item title="Body">
-    <span :if={@log.body_encoding == "base64"}>Base64-encoded binary data:</span>
-    {@log.body}
+  <:item title="Body size">
+    <span id="body-size" title={"#{@body_size} bytes"}>{LoritoWeb.Utils.format_bytes(@body_size)}</span>
+  </:item>
+  <:item
+    title="Body"
+    badges={
+      Enum.reject(
+        [if(@body_truncated, do: "Preview"), if(@log.body_encoding == "base64", do: "Base64")],
+        &is_nil/1
+      )
+    }
+  >
+    <span :if={@body_size == 0}>-</span>
+    <div :if={@body_size > 0} class="min-w-0 w-full">
+      <pre
+        id="body-preview"
+        class="max-h-96 overflow-auto whitespace-pre-wrap break-all rounded bg-base-200 p-3 text-xs"
+      >{@body_preview}</pre>
+      <.link
+        :if={@body_truncated}
+        id="download-full-body"
+        href={~p"/_lorito/logs/#{@log.id}/body"}
+        class="btn btn-sm mt-3"
+      >
+        Download full body
+      </.link>
+    </div>
   </:item>
 </.list>
 <.list :if={@protocol == :dns}>

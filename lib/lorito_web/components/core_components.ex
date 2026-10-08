@@ -546,6 +546,8 @@ defmodule LoritoWeb.CoreComponents do
   """
   slot :item, required: true do
     attr :title, :string, required: true
+    attr :badges, :list
+    attr :error_status, :boolean
   end
 
   def list(assigns) do
@@ -553,8 +555,19 @@ defmodule LoritoWeb.CoreComponents do
     <div class="mt-14">
       <dl class="-my-4 divide-y divide-zinc-100 dark:divide-base-300">
         <div :for={item <- @item} class="flex gap-4 py-4 text-sm leading-6 sm:gap-8">
-          <dt class="font-bold w-1/4 flex-none text-zinc-500 dark:text-base-content">{item.title}</dt>
-          <dd class="text-zinc-700 dark:text-base-content">{render_slot(item)}</dd>
+          <dt class="font-bold w-1/4 flex-none text-zinc-500 dark:text-base-content">
+            {item.title}
+            <span
+              :if={item[:error_status]}
+              class="inline-grid *:[grid-area:1/1] ml-2"
+              aria-hidden="true"
+            >
+              <span class="status status-error animate-ping motion-reduce:animate-none"></span>
+              <span class="status status-error"></span>
+            </span>
+            <span :for={badge <- item[:badges] || []} class="badge badge-sm badge-info ml-2">{badge}</span>
+          </dt>
+          <dd class="min-w-0 flex-1 text-zinc-700 dark:text-base-content">{render_slot(item)}</dd>
         </div>
       </dl>
     </div>

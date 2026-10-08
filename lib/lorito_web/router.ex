@@ -17,6 +17,10 @@ defmodule LoritoWeb.Router do
     plug :accepts, ~w(html json)
   end
 
+  pipeline :authenticated do
+    plug LoritoWeb.Plugs.RequireAuthenticatedUser
+  end
+
   pipeline :mcp do
     plug AshAuthentication.Strategy.ApiKey.Plug,
       resource: Lorito.Accounts.User,
@@ -99,6 +103,12 @@ defmodule LoritoWeb.Router do
         live "/workspaces/:workspace_id/logs/:id", LogLive.Show, :workspace_log_show
       end
     end
+  end
+
+  scope "/_lorito", LoritoWeb do
+    pipe_through [:browser, :authenticated]
+
+    get "/logs/:id/body", LogBodyController, :show
   end
 
   scope "/_lorito/mcp" do

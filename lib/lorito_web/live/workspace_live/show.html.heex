@@ -144,14 +144,14 @@
   <:col :let={{_id, log}} label="Protocol" class="w-24">
     {log.protocol |> to_string() |> String.upcase()}
   </:col>
-  <:col :let={{_id, log}} label="Host">
+  <:col :let={{_id, log}} label="Host" class="max-w-xs whitespace-normal break-all">
     {log.implementation.value.host}
   </:col>
   <:col :let={{_id, log}} label="Client IP">{log.implementation.value.ip}</:col>
   <:col :let={{_id, log}} label="Method">
     {if log.protocol == :http, do: log.implementation.value.method, else: "—"}
   </:col>
-  <:col :let={{_id, log}} label="Url">
+  <:col :let={{_id, log}} label="Url" class="max-w-xs whitespace-normal break-all">
     {if log.protocol == :http,
       do: determine_relative_url(@workspace, log.implementation.value.url),
       else: "—"}
