@@ -38,7 +38,7 @@
     end
   }
 >
-  <:col :let={{_id, log}} label="Date" class="w-64">
+  <:col :let={{_id, log}} label="Date" class="w-36 max-w-36 whitespace-normal">
     {LoritoWeb.Utils.format_datetime(log.inserted_at, @current_user)}
   </:col>
 
@@ -60,10 +60,14 @@
     <% end %>
   </:col>
   <:col :let={{_id, log}} label="Host" class="max-w-xs whitespace-normal break-all">
-    {log.implementation.value.host}
+    <span class={
+      if String.length(log.implementation.value.host || "") < 20, do: "whitespace-nowrap"
+    }>
+      {log.implementation.value.host}
+    </span>
   </:col>
-  <:col :let={{id, log}} label="Client IP">
-    {log.implementation.value.ip}
+  <:col :let={{id, log}} label="Client IP" class="max-w-48 whitespace-normal break-all">
+    <span class="block">{log.implementation.value.ip}</span>
     <.link
       phx-click={
         JS.push("ip_delete", value: %{ip: log.implementation.value.ip}) |> hide("##{id}")

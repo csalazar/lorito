@@ -27,7 +27,7 @@
 <.list :if={@protocol == :http}>
   <:item title="IP">{@log.ip}</:item>
   <:item title="Method">{@log.method}</:item>
-  <:item title="Url">{@log.url}</:item>
+  <:item title="Url"><span class="whitespace-normal break-all">{@log.url}</span></:item>
   <:item :if={@log.error} title="Capture error" error_status={true}>{@log.error}</:item>
   <:item title="Headers">
     <span :if={@log.headers == []}>-</span>
@@ -63,15 +63,15 @@
           <tr>
             <td><b>{name}</b></td>
             <td class="whitespace-normal break-all">
-              <%= case name do %>
-                <% "screenshot" -> %>
+              <%= case {name, value} do %>
+                <% {"screenshot", value} when is_binary(value) -> %>
                   <%= if String.starts_with?(value, "data:image/") do %>
                     <img src={value} />
                   <% else %>
                     Invalid image format: {value}
                   <% end %>
                 <% _ -> %>
-                  {if is_map(value), do: Jason.encode!(value), else: value}
+                  {if is_binary(value), do: value, else: Jason.encode!(value)}
               <% end %>
             </td>
           </tr>

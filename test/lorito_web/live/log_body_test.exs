@@ -61,6 +61,22 @@ defmodule LoritoWeb.LogBodyTest do
     refute conn.resp_body =~ "private payload"
   end
 
+  test "nested arrays and non-string screenshot params render safely", %{conn: conn} do
+    params = %{
+      "_json" => [1, "two", %{"three" => 3}],
+      "screenshot" => %{"unexpected" => true},
+      "empty" => nil,
+      "enabled" => false
+    }
+
+    log = generate(http_log(params: params))
+    {:ok, view, _} = live(conn, "/_lorito/logs/#{log.id}")
+    assert has_element?(view, "td", Jason.encode!(params["_json"]))
+    assert has_element?(view, "td", Jason.encode!(params["screenshot"]))
+    assert has_element?(view, "td", "null")
+    assert has_element?(view, "td", "false")
+  end
+
   test "missing logs return 404", %{conn: conn} do
     assert get(conn, "/_lorito/logs/#{Ash.UUID.generate()}/body") |> response(404) == "Not found"
   end
