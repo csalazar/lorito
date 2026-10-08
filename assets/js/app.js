@@ -52,6 +52,7 @@ window.addEventListener("phx:copy", (event) => {
 
 function applyColorSchemePreference() {
   const darkExpected = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.theme = darkExpected ? "dark" : "pastel";
   if (darkExpected) {
     document.documentElement.classList.add("dark");
     document.documentElement.style.setProperty("color-scheme", "dark");

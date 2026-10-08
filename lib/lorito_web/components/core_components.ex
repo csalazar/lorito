@@ -326,7 +326,7 @@ defmodule LoritoWeb.CoreComponents do
     ~H"""
     <div phx-feedback-for={@name} class="w-full">
       <.label for={@id}>{@label}</.label>
-      <select id={@id} name={@name} class="select select-bordered" multiple={@multiple} {@rest}>
+      <select id={@id} name={@name} class="select" multiple={@multiple} {@rest}>
         <option :if={@prompt} value="">{@prompt}</option>
         {Phoenix.HTML.Form.options_for_select(@options, @value)}
       </select>
@@ -366,9 +366,9 @@ defmodule LoritoWeb.CoreComponents do
         id={@id}
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
         class={[
-          "input input-bordered w-full max-w-xs",
+          "input w-full max-w-xs",
           @errors == [] &&
-            "border-zinc-300 dark:border-base-content focus:border-zinc-400 dark:focus:border-base-conten",
+            "border-zinc-300 dark:border-base-content focus:border-zinc-400 dark:focus:border-base-content",
           @errors != [] && "border-rose-400 focus:border-rose-400"
         ]}
         {@rest}

@@ -1,11 +1,18 @@
 {
   "dependencies": {
-    "daisyui": "^4.12.10",
+    "@tailwindcss/cli": "4.3.0",
+    "@tailwindcss/forms": "0.5.10",
+    "daisyui": "^5.7.47",
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
-    "phoenix_live_view": "file:../deps/phoenix_live_view"
+    "phoenix_live_view": "file:../deps/phoenix_live_view",
+    "tailwindcss": "4.3.0"
   },
   "prettier": {
     "printWidth": 100
+  },
+  "engines": {
+    "npm": ">=12",
+    "node": ">=22"
   }
 }

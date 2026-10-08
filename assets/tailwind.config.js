@@ -64,12 +64,6 @@ module.exports = {
           }
         }
       }, {values})
-    }),
-    require('daisyui')
+    })
   ],
-  daisyui: {
-    themes: ["pastel", "dark"],
-    logs: false
-  },
-  darkMode: 'class'
 }
